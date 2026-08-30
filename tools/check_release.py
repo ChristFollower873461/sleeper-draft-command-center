@@ -14,6 +14,17 @@ PRIVATE_MARKERS_ENV = "SDCC_PRIVATE_MARKERS_JSON"
 BLOCKED_SUFFIXES = {".csv", ".zip", ".pem", ".key", ".p12", ".pfx"}
 BLOCKED_NAMES = {".env", "cookies.txt", "local storage", "login data"}
 SKIP_PARTS = {".git", "__pycache__", ".pytest_cache"}
+ALLOWED_PNG_ROOTS = (Path("assets/brand"), Path("extension/icons"), Path("store-assets"))
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+
+def valid_allowed_png(path: Path, relative: Path) -> bool:
+    if path.suffix.lower() != ".png" or not any(relative.is_relative_to(root) for root in ALLOWED_PNG_ROOTS):
+        return False
+    data = path.read_bytes()
+    return len(data) >= 24 and data.startswith(PNG_SIGNATURE) and data[12:16] == b"IHDR" and all(
+        value > 0 for value in (int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big"))
+    )
 
 
 def load_private_markers(environment: Mapping[str, str] | None = None) -> tuple[str, ...]:
@@ -39,6 +50,8 @@ def check_project(root: Path, markers: tuple[str, ...] = ()) -> list[str]:
         lower_name = path.name.lower()
         if lower_name in BLOCKED_NAMES or path.suffix.lower() in BLOCKED_SUFFIXES:
             failures.append(f"blocked artifact: {relative}")
+            continue
+        if valid_allowed_png(path, relative):
             continue
         try:
             text = path.read_text(encoding="utf-8").lower()

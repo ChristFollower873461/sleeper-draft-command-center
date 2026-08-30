@@ -33,6 +33,8 @@ test("all manifest and extension-page resources are local and present", () => {
     manifest.action.default_popup,
     manifest.background.service_worker,
     manifest.options_ui.page,
+    ...Object.values(manifest.icons),
+    ...Object.values(manifest.action.default_icon),
     "extension/draft.html",
     ...manifest.content_scripts.flatMap((entry) => entry.js),
     ...manifest.content_scripts.flatMap((entry) => entry.css || []),
@@ -52,6 +54,11 @@ test("all manifest and extension-page resources are local and present", () => {
       assert.equal(fs.existsSync(path.resolve(path.dirname(path.join(ROOT, htmlPath)), script)), true, `${script} must exist`);
     }
   }
+});
+
+test("manifest supplies the Chrome Web Store icon set", () => {
+  assert.deepEqual(Object.keys(manifest.icons), ["16", "32", "48", "128"]);
+  assert.equal(manifest.icons[128], "extension/icons/icon-128.png");
 });
 
 test("extension service and content entry contain no write-network request", () => {
