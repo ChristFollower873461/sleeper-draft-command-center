@@ -1,0 +1,19 @@
+{
+  "name": "sleeper-draft-command-center",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Public-safe Chrome extension for personal Sleeper draft rankings.",
+  "scripts": {
+    "test:js": "node --test tests/*.test.js",
+    "test:privacy": "python3 tools/check_release.py && python3 -m unittest discover -s tests",
+    "test:browser:gate3": "SDCC_HEADED=1 node tools/browser_gate_3.cjs",
+    "test:browser:gate4": "SDCC_HEADED=1 node tools/browser_gate_4.cjs",
+    "test:browser:gate5": "SDCC_HEADED=1 node tools/browser_gate_5.cjs",
+    "test:browser:gate6": "SDCC_HEADED=1 node tools/browser_gate_6.cjs",
+    "test": "npm run test:js && npm run test:privacy"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

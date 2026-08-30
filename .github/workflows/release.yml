@@ -1,0 +1,41 @@
+name: tagged-release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test
+        run: npm test
+      - name: Build protected release package
+        env:
+          SDCC_PRIVATE_MARKERS_JSON: ${{ secrets.SDCC_PRIVATE_MARKERS_JSON }}
+        run: >-
+          python3 tools/package_release.py
+          --require-private-policy
+          --output "dist/sleeper-draft-command-center-${GITHUB_REF_NAME}.zip"
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          "dist/sleeper-draft-command-center-${GITHUB_REF_NAME}.zip"
+          "dist/sleeper-draft-command-center-${GITHUB_REF_NAME}.zip.sha256"
+          --verify-tag
+          --title "Sleeper Draft Command Center ${GITHUB_REF_NAME}"
+          --generate-notes
+          --prerelease

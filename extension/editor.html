@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ranking Board | Sleeper Draft Command Center</title>
+    <link rel="stylesheet" href="setup.css">
+    <link rel="stylesheet" href="editor.css">
+  </head>
+  <body class="editor-body">
+    <header class="topbar editor-topbar">
+      <a class="brand-lockup" href="setup.html#ready" aria-label="Sleeper Draft Command Center setup">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>
+          <strong>Draft Command Center</strong>
+          <small>Ranking board</small>
+        </span>
+      </a>
+      <div class="editor-header-actions">
+        <span id="save-state" class="save-state" role="status" aria-live="polite">Loading local board</span>
+        <a class="header-link" href="setup.html#ready">Setup</a>
+      </div>
+    </header>
+
+    <main class="editor-shell">
+      <section class="profile-console" aria-labelledby="editor-title">
+        <div class="profile-heading">
+          <div>
+            <span class="stage-code">Board / Local profile</span>
+            <h1 id="editor-title">Personal ranking workspace</h1>
+          </div>
+          <div class="history-controls" aria-label="Ranking history">
+            <button id="undo-ranking" class="icon-button" type="button" aria-label="Undo ranking edit" title="Undo" disabled>&#8630;</button>
+            <button id="redo-ranking" class="icon-button" type="button" aria-label="Redo ranking edit" title="Redo" disabled>&#8631;</button>
+          </div>
+        </div>
+
+        <div class="profile-bar">
+          <label class="profile-select-label" for="profile-select">
+            <span>Active profile</span>
+            <select id="profile-select" aria-describedby="profile-meta"></select>
+          </label>
+          <div class="profile-commands" aria-label="Profile commands">
+            <button id="new-profile" class="command-button" type="button">New</button>
+            <button id="clone-profile" class="command-button" type="button">Clone</button>
+            <button id="rename-profile" class="command-button" type="button">Rename</button>
+            <button id="delete-profile" class="command-button danger-command" type="button">Delete</button>
+            <button id="import-profile" class="command-button" type="button">Import</button>
+            <button id="export-profile" class="command-button" type="button">Export</button>
+            <input id="import-file" type="file" accept=".json,application/json" hidden>
+          </div>
+        </div>
+
+        <div id="profile-meta" class="profile-meta" aria-live="polite">
+          <span><b id="profile-count">0</b> players</span>
+          <span id="profile-format">No format</span>
+          <span id="profile-updated">Not saved</span>
+        </div>
+      </section>
+
+      <section class="ranking-workspace" aria-label="Ranking editor">
+        <div class="ranking-toolbar">
+          <label class="search-control" for="player-search">
+            <span class="sr-only">Search players</span>
+            <input id="player-search" type="search" placeholder="Search player, team, note, or ID" autocomplete="off">
+          </label>
+          <fieldset class="position-filter">
+            <legend class="sr-only">Filter by position</legend>
+            <button class="active" type="button" data-position="ALL" aria-pressed="true">All</button>
+            <button type="button" data-position="QB" aria-pressed="false">QB</button>
+            <button type="button" data-position="RB" aria-pressed="false">RB</button>
+            <button type="button" data-position="WR" aria-pressed="false">WR</button>
+            <button type="button" data-position="TE" aria-pressed="false">TE</button>
+            <button type="button" data-position="K" aria-pressed="false">K</button>
+            <button type="button" data-position="DEF" aria-pressed="false">DEF</button>
+          </fieldset>
+          <span id="visible-count" class="visible-count">0 shown</span>
+        </div>
+
+        <div id="board-shell" class="board-shell">
+          <div class="board-header" role="row">
+            <span aria-hidden="true"></span>
+            <span>Rank</span>
+            <span>Player</span>
+            <span>Pos</span>
+            <span>ADP</span>
+            <span>Tier</span>
+            <span>Notes</span>
+            <span class="mobile-only"><span class="sr-only">Details</span></span>
+          </div>
+          <div id="ranking-rows" class="ranking-rows" role="rowgroup"></div>
+          <p id="ranking-empty" class="empty-state" hidden>No players match this view.</p>
+        </div>
+
+        <section id="no-profile" class="no-profile" hidden>
+          <span class="stage-code">Board unavailable</span>
+          <h2>Create or import a ranking profile</h2>
+          <div>
+            <button class="primary-button" type="button" data-empty-action="new">Create profile</button>
+            <a class="secondary-link" href="setup.html#board">Build from public ADP</a>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="profile-dialog" class="editor-dialog">
+      <form id="profile-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <span class="stage-code" id="profile-dialog-code">Profile</span>
+            <h2 id="profile-dialog-title">Create profile</h2>
+          </div>
+          <button class="icon-button" type="submit" value="cancel" aria-label="Close profile dialog" title="Close">&#215;</button>
+        </div>
+        <label for="profile-name-field">
+          <span>Profile name</span>
+          <input id="profile-name-field" type="text" maxlength="80" required>
+        </label>
+        <label id="profile-format-label" for="profile-format-field">
+          <span>Format</span>
+          <select id="profile-format-field">
+            <option value="one_qb">One QB</option>
+            <option value="superflex">Superflex</option>
+            <option value="best_ball">Best ball</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" type="submit" value="cancel">Cancel</button>
+          <button id="profile-dialog-submit" class="primary-button" type="submit" value="save">Create</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="delete-dialog" class="editor-dialog compact-dialog">
+      <form id="delete-form" method="dialog">
+        <span class="stage-code">Delete profile</span>
+        <h2>Remove <span id="delete-profile-name">this profile</span>?</h2>
+        <p>The ranking profile will be removed from this browser. Other profiles stay intact.</p>
+        <div class="dialog-actions">
+          <button class="secondary-button" type="submit" value="cancel">Cancel</button>
+          <button class="danger-button" type="submit" value="delete">Delete</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="player-dialog" class="editor-dialog player-dialog">
+      <form id="player-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <span id="player-dialog-team" class="stage-code">Player</span>
+            <h2 id="player-dialog-name">Edit player</h2>
+          </div>
+          <button class="icon-button" type="submit" value="cancel" aria-label="Close player details" title="Close">&#215;</button>
+        </div>
+        <div class="player-dialog-fields">
+          <label for="player-rank-field"><span>Rank</span><input id="player-rank-field" type="number" min="1" step="1"></label>
+          <label for="player-adp-field"><span>ADP</span><input id="player-adp-field" type="number" min="0" step="0.1"></label>
+          <label for="player-tier-field"><span>Tier</span><input id="player-tier-field" type="number" min="1" step="1"></label>
+        </div>
+        <label for="player-notes-field"><span>Notes</span><textarea id="player-notes-field" maxlength="300" rows="4"></textarea></label>
+        <div class="dialog-actions">
+          <button class="secondary-button" type="submit" value="cancel">Cancel</button>
+          <button class="primary-button" type="submit" value="save">Save player</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="../src/storage.js"></script>
+    <script src="state-client.js"></script>
+    <script src="../src/ranking-editor.js"></script>
+    <script src="../src/profile-manager.js"></script>
+    <script src="editor.js"></script>
+  </body>
+</html>

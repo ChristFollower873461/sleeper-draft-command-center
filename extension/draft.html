@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Draft Room | Sleeper Draft Command Center</title>
+    <link rel="stylesheet" href="setup.css">
+    <link rel="stylesheet" href="draft.css">
+  </head>
+  <body class="draft-body">
+    <header class="topbar runtime-topbar">
+      <a class="brand-lockup" href="editor.html" aria-label="Open ranking board">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>
+          <strong>Draft Command Center</strong>
+          <small>Decision room</small>
+        </span>
+      </a>
+      <div class="runtime-header-actions">
+        <fieldset class="mode-switch" aria-label="Draft mode">
+          <button id="live-mode" type="button" data-mode="live" aria-pressed="true">Live</button>
+          <button id="manual-mode" type="button" data-mode="manual" aria-pressed="false">Manual</button>
+        </fieldset>
+        <span id="sync-status" class="sync-status" role="status" aria-live="polite">Loading</span>
+        <a class="header-link" href="editor.html">Rankings</a>
+      </div>
+    </header>
+
+    <section id="room-signals" class="room-signals" aria-label="Draft status">
+      <div data-room-signal="mode"><span>Mode</span><strong id="signal-mode">-</strong></div>
+      <div data-room-signal="pick"><span>Current pick</span><strong id="signal-pick">-</strong></div>
+      <div data-room-signal="turn"><span>Your turn</span><strong id="signal-turn">-</strong></div>
+      <div data-room-signal="build"><span>Build</span><strong id="signal-build">-</strong></div>
+    </section>
+
+    <main class="runtime-shell">
+      <section id="runtime-message" class="runtime-message" role="status" aria-live="polite">
+        <span class="stage-code">Draft runtime</span>
+        <h1>Loading the local command center</h1>
+      </section>
+
+      <div id="runtime-content" hidden>
+        <section class="room-heading">
+          <div>
+            <span id="room-kicker" class="stage-code">Sleeper draft</span>
+            <h1 id="room-name">Draft room</h1>
+            <p id="room-meta">Waiting for draft context</p>
+          </div>
+          <div class="room-actions">
+            <button id="refresh-room" class="icon-button" type="button" aria-label="Refresh draft room" title="Refresh">&#8635;</button>
+            <button id="undo-manual" class="icon-button" type="button" aria-label="Undo latest effective manual pick" title="Undo manual pick" disabled>&#8630;</button>
+          </div>
+        </section>
+
+        <nav class="runtime-tabs" aria-label="Draft views">
+          <button class="active" type="button" data-runtime-tab="shortlist" aria-current="page">Shortlist</button>
+          <button type="button" data-runtime-tab="board">Board</button>
+          <button type="button" data-runtime-tab="room">Room</button>
+          <button type="button" data-runtime-tab="roster">Roster</button>
+          <button type="button" data-runtime-tab="manual">Manual</button>
+        </nav>
+
+        <div class="runtime-layout">
+          <div class="runtime-main">
+            <section class="runtime-panel active" data-runtime-panel="shortlist" aria-labelledby="shortlist-title">
+              <div class="section-heading-row">
+                <div>
+                  <span class="stage-code">Decision set</span>
+                  <h2 id="shortlist-title">Best paths for this turn</h2>
+                </div>
+                <span id="shortlist-clock" class="section-state">-</span>
+              </div>
+              <div id="recommendation-list" class="recommendation-list"></div>
+              <div class="pinned-section">
+                <div class="subsection-heading">
+                  <h3>Pinned players</h3>
+                  <span id="pinned-count">0</span>
+                </div>
+                <div id="pinned-list" class="compact-player-list"></div>
+              </div>
+            </section>
+
+            <section class="runtime-panel" data-runtime-panel="board" aria-labelledby="board-view-title" hidden>
+              <div class="section-heading-row">
+                <div>
+                  <span class="stage-code">Available pool</span>
+                  <h2 id="board-view-title">Ranking board</h2>
+                </div>
+                <span id="board-count" class="section-state">0 available</span>
+              </div>
+              <div class="draft-board-toolbar">
+                <label for="board-search"><span class="sr-only">Search available players</span><input id="board-search" type="search" placeholder="Search player, team, note, or ID" autocomplete="off"></label>
+                <fieldset class="draft-position-filter">
+                  <legend class="sr-only">Filter available players by position</legend>
+                  <button class="active" type="button" data-board-position="ALL" aria-pressed="true">All</button>
+                  <button type="button" data-board-position="QB" aria-pressed="false">QB</button>
+                  <button type="button" data-board-position="RB" aria-pressed="false">RB</button>
+                  <button type="button" data-board-position="WR" aria-pressed="false">WR</button>
+                  <button type="button" data-board-position="TE" aria-pressed="false">TE</button>
+                  <button type="button" data-board-position="K" aria-pressed="false">K</button>
+                  <button type="button" data-board-position="DEF" aria-pressed="false">DEF</button>
+                </fieldset>
+              </div>
+              <div class="draft-board-shell">
+                <div class="draft-board-header" role="row">
+                  <span>Rank</span><span>Player</span><span>Pos</span><span>ADP</span><span>Tier</span><span>Action</span>
+                </div>
+                <div id="draft-board-rows" class="draft-board-rows" role="rowgroup"></div>
+                <p id="draft-board-empty" class="empty-state" hidden>No available players match this view.</p>
+              </div>
+            </section>
+
+            <section class="runtime-panel" data-runtime-panel="room" aria-labelledby="room-view-title" hidden>
+              <div class="section-heading-row">
+                <div>
+                  <span class="stage-code">Room pressure</span>
+                  <h2 id="room-view-title">What the draft is doing</h2>
+                </div>
+                <span id="run-signal" class="section-state">No run</span>
+              </div>
+              <div class="room-intelligence-grid">
+                <section aria-labelledby="demand-title">
+                  <div class="subsection-heading"><h3 id="demand-title">Teams ahead</h3><span id="ahead-team-count">0</span></div>
+                  <div id="demand-list" class="signal-list"></div>
+                </section>
+                <section aria-labelledby="tiers-title">
+                  <div class="subsection-heading"><h3 id="tiers-title">Tier cliffs</h3><span>Top pool</span></div>
+                  <div id="tier-list" class="signal-list"></div>
+                </section>
+                <section aria-labelledby="fallers-title">
+                  <div class="subsection-heading"><h3 id="fallers-title">ADP fallers</h3><span id="faller-count">0</span></div>
+                  <div id="faller-list" class="signal-list"></div>
+                </section>
+              </div>
+              <section class="recent-section" aria-labelledby="recent-title">
+                <div class="subsection-heading"><h3 id="recent-title">Recent picks</h3><span>Newest first</span></div>
+                <div id="recent-picks" class="recent-picks"></div>
+              </section>
+            </section>
+
+            <section class="runtime-panel" data-runtime-panel="roster" aria-labelledby="roster-view-title" hidden>
+              <div class="section-heading-row">
+                <div>
+                  <span class="stage-code">Construction</span>
+                  <h2 id="roster-view-title">Your roster</h2>
+                </div>
+                <span id="roster-total" class="section-state">0 selected</span>
+              </div>
+              <div id="position-counts" class="position-counts"></div>
+              <div id="roster-list" class="roster-list"></div>
+            </section>
+
+            <section class="runtime-panel manual-panel" data-runtime-panel="manual" aria-labelledby="manual-view-title" hidden>
+              <div class="section-heading-row">
+                <div>
+                  <span class="stage-code">Local entry</span>
+                  <h2 id="manual-view-title">Manual draft control</h2>
+                </div>
+                <span id="manual-pick-state" class="section-state">-</span>
+              </div>
+              <form id="manual-pick-form" class="manual-pick-form">
+                <label for="manual-player-search"><span>Available player</span><input id="manual-player-search" type="search" placeholder="Search the active ranking profile" autocomplete="off"></label>
+                <button id="record-manual-pick" class="primary-button" type="submit">Record next pick</button>
+              </form>
+              <div id="manual-candidate" class="manual-candidate"></div>
+              <div class="subsection-heading manual-history-heading"><h3>Manual history</h3><span id="manual-history-count">0</span></div>
+              <div id="manual-history" class="recent-picks"></div>
+            </section>
+          </div>
+
+          <aside class="decision-sidebar" aria-label="Current decision summary">
+            <section class="decision-panel">
+              <span class="stage-code">At a glance</span>
+              <strong id="decision-label">Waiting</strong>
+              <p id="decision-detail">Draft context is loading.</p>
+            </section>
+            <section class="sidebar-section">
+              <div class="subsection-heading"><h3>Build counts</h3><span id="sidebar-total">0</span></div>
+              <div id="sidebar-counts" class="sidebar-counts"></div>
+            </section>
+            <section class="sidebar-section">
+              <div class="subsection-heading"><h3>Recent room</h3><span id="sidebar-run">Quiet</span></div>
+              <div id="sidebar-recent" class="sidebar-recent"></div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <dialog id="manual-setup-dialog" class="editor-dialog manual-setup-dialog">
+      <form id="manual-setup-form" method="dialog">
+        <div class="dialog-heading">
+          <div><span class="stage-code">Offline room</span><h2>Create manual draft</h2></div>
+          <button class="icon-button" type="submit" value="cancel" aria-label="Close manual draft setup" title="Close">&#215;</button>
+        </div>
+        <label for="manual-profile"><span>Ranking profile</span><select id="manual-profile"></select></label>
+        <label for="manual-room-name"><span>Room name</span><input id="manual-room-name" type="text" maxlength="80" value="Manual draft"></label>
+        <div class="manual-config-grid">
+          <label for="manual-format"><span>Format</span><select id="manual-format"><option value="one_qb">One QB</option><option value="superflex">Superflex</option><option value="best_ball">Best ball</option><option value="custom">Custom</option></select></label>
+          <label for="manual-teams"><span>Teams</span><input id="manual-teams" type="number" min="2" max="32" value="12"></label>
+          <label for="manual-rounds"><span>Rounds</span><input id="manual-rounds" type="number" min="1" max="50" value="17"></label>
+          <label for="manual-slot"><span>Your slot</span><input id="manual-slot" type="number" min="1" max="32" value="1"></label>
+          <label for="manual-reversal"><span>Reversal round</span><input id="manual-reversal" type="number" min="0" max="50" value="0"></label>
+        </div>
+        <div class="dialog-actions">
+          <button class="secondary-button" type="submit" value="cancel">Cancel</button>
+          <button class="primary-button" type="submit" value="create">Create room</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="../src/storage.js"></script>
+    <script src="state-client.js"></script>
+    <script src="../src/sleeper-api.js"></script>
+    <script src="../src/draft-order.js"></script>
+    <script src="../src/draft-context.js"></script>
+    <script src="../src/draft-session.js"></script>
+    <script src="../src/recommendation-engine.js"></script>
+    <script src="../src/draft-runtime.js"></script>
+    <script src="draft-render.js"></script>
+    <script src="draft.js"></script>
+  </body>
+</html>

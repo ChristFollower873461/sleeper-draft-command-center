@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sleeper Draft Command Center</title>
+    <link rel="stylesheet" href="setup.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand-lockup" href="#setup" aria-label="Sleeper Draft Command Center setup">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>
+          <strong>Draft Command Center</strong>
+          <small>Local ranking workspace</small>
+        </span>
+      </a>
+      <div class="privacy-status">
+        <span class="status-dot" aria-hidden="true"></span>
+        Read only / local storage
+      </div>
+    </header>
+
+    <section class="signal-rail" aria-label="Workspace readiness">
+      <div data-signal="identity">
+        <span>01</span>
+        <b>Identity</b>
+        <em id="identity-signal">Open</em>
+      </div>
+      <div data-signal="board">
+        <span>02</span>
+        <b>Board</b>
+        <em id="board-signal">Open</em>
+      </div>
+      <div data-signal="matches">
+        <span>03</span>
+        <b>Match</b>
+        <em id="matches-signal">Open</em>
+      </div>
+      <div data-signal="room">
+        <span>04</span>
+        <b>Room</b>
+        <em id="room-signal">Open</em>
+      </div>
+    </section>
+
+    <div class="workspace" id="setup">
+      <nav class="stage-nav" aria-label="Setup stages">
+        <button type="button" data-step="identity" class="active" aria-current="step">
+          <span>01</span><b>Identity</b><small>Sleeper account</small>
+        </button>
+        <button type="button" data-step="board">
+          <span>02</span><b>Board</b><small>Ranking source</small>
+        </button>
+        <button type="button" data-step="review">
+          <span>03</span><b>Review</b><small>Player matches</small>
+        </button>
+        <button type="button" data-step="ready">
+          <span>04</span><b>Ready</b><small>Profile and draft</small>
+        </button>
+      </nav>
+
+      <main class="stage-content">
+        <div id="global-message" class="message-line" role="status" aria-live="polite"></div>
+
+        <section class="stage-panel active" data-step-panel="identity" aria-labelledby="identity-title">
+          <div class="panel-heading">
+            <span class="stage-code">01 / Identity</span>
+            <h1 id="identity-title">Connect your public Sleeper profile</h1>
+          </div>
+
+          <form id="identity-form" class="identity-form">
+            <label for="username">Sleeper username</label>
+            <div class="input-action-row">
+              <input id="username" name="username" type="text" maxlength="50" autocomplete="username" required>
+              <button class="primary-button" type="submit">Connect</button>
+            </div>
+          </form>
+
+          <div class="identity-readout" id="identity-readout" hidden>
+            <div>
+              <span>Account</span>
+              <strong id="identity-name">-</strong>
+            </div>
+            <div>
+              <span>Season</span>
+              <strong id="identity-season">-</strong>
+            </div>
+            <div>
+              <span>Leagues</span>
+              <strong id="identity-leagues">0</strong>
+            </div>
+            <div>
+              <span>Drafts</span>
+              <strong id="identity-drafts">0</strong>
+            </div>
+          </div>
+
+          <div class="panel-actions">
+            <span id="identity-status" class="inline-status">Awaiting username</span>
+            <button class="secondary-button next-step" type="button" data-next-step="board" disabled>Continue to board</button>
+          </div>
+        </section>
+
+        <section class="stage-panel" data-step-panel="board" aria-labelledby="board-title" hidden>
+          <div class="panel-heading">
+            <span class="stage-code">02 / Board</span>
+            <h1 id="board-title">Build the ranking profile</h1>
+          </div>
+
+          <div class="profile-fields">
+            <label>
+              <span>Profile name</span>
+              <input id="profile-name-input" type="text" maxlength="80" value="My 2026 rankings">
+            </label>
+            <label>
+              <span>Format</span>
+              <select id="profile-format">
+                <option value="one_qb">One QB</option>
+                <option value="superflex">Superflex</option>
+                <option value="best_ball">Best ball</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+          </div>
+
+          <fieldset class="source-switcher">
+            <legend>Ranking source</legend>
+            <div>
+              <button class="active" type="button" data-source="public_adp" aria-pressed="true">Public ADP</button>
+              <button type="button" data-source="paste" aria-pressed="false">Paste list</button>
+              <button type="button" data-source="file" aria-pressed="false">CSV / JSON</button>
+            </div>
+          </fieldset>
+
+          <div class="source-panel active" data-source-panel="public_adp">
+            <div class="source-copy">
+              <strong>Sleeper public baseline</strong>
+              <span id="baseline-readout">Current format ADP with player-order fallback.</span>
+            </div>
+            <button class="primary-button" id="build-public-board" type="button">Build 250-player board</button>
+          </div>
+
+          <div class="source-panel" data-source-panel="paste" hidden>
+            <label for="paste-rankings">Ranked players</label>
+            <textarea id="paste-rankings" rows="12" maxlength="2097152" placeholder="1. Player Name | WR | DET"></textarea>
+            <button class="primary-button" id="parse-paste" type="button">Review pasted list</button>
+          </div>
+
+          <div class="source-panel" data-source-panel="file" hidden>
+            <label class="file-drop" for="ranking-file">
+              <span id="file-label">Choose CSV or JSON</span>
+              <small>Maximum 2 MiB / 1,000 players</small>
+              <input id="ranking-file" type="file" accept=".csv,.json,text/csv,application/json">
+            </label>
+            <button class="primary-button" id="parse-file" type="button" disabled>Review file</button>
+          </div>
+
+          <div class="panel-actions">
+            <span id="board-status" class="inline-status">No board loaded</span>
+            <button class="secondary-button" type="button" data-next-step="review" disabled>Open review</button>
+          </div>
+        </section>
+
+        <section class="stage-panel review-panel" data-step-panel="review" aria-labelledby="review-title" hidden>
+          <div class="panel-heading review-heading">
+            <div>
+              <span class="stage-code">03 / Review</span>
+              <h1 id="review-title">Verify every player identity</h1>
+            </div>
+            <div class="review-counts" aria-live="polite">
+              <span><b id="count-matched">0</b> matched</span>
+              <span><b id="count-needs-review">0</b> review</span>
+              <span><b id="count-omitted">0</b> omitted</span>
+            </div>
+          </div>
+
+          <div class="review-toolbar">
+            <label>
+              <span class="sr-only">Search review rows</span>
+              <input id="review-search" type="search" placeholder="Search player, team, ID">
+            </label>
+            <label>
+              <span class="sr-only">Filter review status</span>
+              <select id="review-filter">
+                <option value="all">All rows</option>
+                <option value="needs_review">Needs review</option>
+                <option value="matched">Matched</option>
+                <option value="omitted">Omitted</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="review-table-wrap">
+            <table class="review-table">
+              <thead>
+                <tr>
+                  <th scope="col">Rank</th>
+                  <th scope="col">Imported player</th>
+                  <th scope="col">Resolved player</th>
+                  <th scope="col">Status</th>
+                  <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="review-rows"></tbody>
+            </table>
+            <p id="review-empty" class="empty-state" hidden>No rows match this view.</p>
+          </div>
+
+          <div class="panel-actions sticky-actions">
+            <span id="review-status" class="inline-status">Load a board to begin</span>
+            <button class="primary-button" id="save-profile" type="button" disabled>Save ranking profile</button>
+          </div>
+        </section>
+
+        <section class="stage-panel" data-step-panel="ready" aria-labelledby="ready-title" hidden>
+          <div class="panel-heading">
+            <span class="stage-code">04 / Ready</span>
+            <h1 id="ready-title">Choose the working profile and draft</h1>
+          </div>
+
+          <div class="ready-grid">
+            <label>
+              <span>Ranking profile</span>
+              <select id="active-profile-select"></select>
+            </label>
+            <label>
+              <span>Sleeper draft</span>
+              <select id="draft-select">
+                <option value="">No draft selected</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="ready-readout">
+            <div>
+              <span>Players</span>
+              <strong id="ready-player-count">0</strong>
+            </div>
+            <div>
+              <span>Format</span>
+              <strong id="ready-format">-</strong>
+            </div>
+            <div>
+              <span>Draft</span>
+              <strong id="ready-draft-status">Manual ready</strong>
+            </div>
+          </div>
+
+          <div class="panel-actions">
+            <span id="ready-status" class="inline-status">Save a ranking profile</span>
+            <div class="ready-actions">
+              <button class="primary-button" id="open-ranking-editor" type="button" disabled>Edit ranking board</button>
+              <button class="secondary-button" id="open-command-center" type="button" disabled>Open command center</button>
+              <button class="secondary-button" id="open-sleeper-draft" type="button" disabled>Open Sleeper draft</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="resolver-dialog" class="resolver-dialog">
+      <form method="dialog" class="resolver-header">
+        <div>
+          <span class="stage-code">Player resolver</span>
+          <h2 id="resolver-title">Resolve player</h2>
+        </div>
+        <button type="submit" value="cancel" aria-label="Close player resolver">Close</button>
+      </form>
+      <label for="resolver-search">Search Sleeper player directory</label>
+      <input id="resolver-search" type="search" autocomplete="off">
+      <div id="resolver-results" class="resolver-results"></div>
+      <button id="omit-row" class="danger-button" type="button">Omit this row</button>
+    </dialog>
+
+    <script src="../src/storage.js"></script>
+    <script src="state-client.js"></script>
+    <script src="../src/sleeper-api.js"></script>
+    <script src="../src/ranking-import.js"></script>
+    <script src="../src/player-matcher.js"></script>
+    <script src="setup.js"></script>
+  </body>
+</html>

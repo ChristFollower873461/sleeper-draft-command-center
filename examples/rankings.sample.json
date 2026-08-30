@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "name": "Fictional Superflex Sample",
+  "format": "superflex",
+  "players": [
+    {
+      "rank": 1,
+      "player": "Ada Quarter",
+      "position": "QB",
+      "team": "TST",
+      "sleeper_id": "sample-qb-1",
+      "adp": 1.5,
+      "tier": 1,
+      "notes": "Fictional test player"
+    },
+    {
+      "rank": 2,
+      "player": "Grace Runner",
+      "position": "RB",
+      "team": "TST",
+      "sleeper_id": "sample-rb-1",
+      "adp": 3.0,
+      "tier": 1,
+      "notes": "Fictional test player"
+    },
+    {
+      "rank": 3,
+      "player": "Katherine Catch",
+      "position": "WR",
+      "team": "DEV",
+      "sleeper_id": "sample-wr-1",
+      "adp": 4.5,
+      "tier": 1,
+      "notes": "Fictional test player"
+    }
+  ]
+}
+

@@ -1,0 +1,19 @@
+#sdcc-draft-launcher {
+  position: fixed;
+  z-index: 2147483646;
+  bottom: 16px;
+  left: 16px;
+  min-height: 40px;
+  padding: 8px 13px;
+  border: 1px solid #4ff7d1;
+  border-radius: 4px;
+  background: #080c0f;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
+  color: #f1f5f6;
+  cursor: pointer;
+  font: 700 12px/1.2 Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+#sdcc-draft-launcher:hover { background: #172228; }
+#sdcc-draft-launcher:focus-visible { outline: 2px solid #efc66d; outline-offset: 3px; }

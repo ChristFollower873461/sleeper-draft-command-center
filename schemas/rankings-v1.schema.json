@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/sleeper-draft-command-center/rankings-v1.schema.json",
+  "title": "Sleeper Draft Command Center ranking pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "name", "format", "players"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "format": {
+      "type": "string",
+      "enum": ["one_qb", "superflex", "best_ball", "custom"]
+    },
+    "players": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rank", "player", "position", "sleeper_id"],
+        "properties": {
+          "rank": { "type": "integer", "minimum": 1, "maximum": 1000 },
+          "player": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "position": {
+            "type": "string",
+            "enum": ["QB", "RB", "WR", "TE", "K", "DEF"]
+          },
+          "team": { "type": "string", "maxLength": 5 },
+          "sleeper_id": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "adp": { "type": ["number", "null"], "minimum": 0 },
+          "tier": { "type": ["integer", "null"], "minimum": 1 },
+          "notes": { "type": "string", "maxLength": 300 }
+        }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Sleeper Draft Command Center",
+  "short_name": "Draft Command",
+  "version": "0.2.0",
+  "description": "Use personal rankings and read-only Sleeper draft intelligence in live or manual rooms.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.sleeper.app/*",
+    "https://api.sleeper.com/*"
+  ],
+  "action": {
+    "default_title": "Sleeper Draft Command Center",
+    "default_popup": "extension/popup.html"
+  },
+  "background": {
+    "service_worker": "extension/background.js"
+  },
+  "options_ui": {
+    "page": "extension/setup.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://sleeper.com/draft/*",
+        "https://sleeper.com/draftboards*",
+        "https://sleeper.com/leagues/*/predraft*",
+        "https://sleeper.com/mock-drafts/*"
+      ],
+      "js": [
+        "src/content-entry.js"
+      ],
+      "css": [
+        "extension/launcher.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'; connect-src https://api.sleeper.app https://api.sleeper.com"
+  }
+}

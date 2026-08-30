@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sleeper Draft Command Center</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="brand-lockup">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>
+          <strong>Draft Command</strong>
+          <small>Personal board console</small>
+        </span>
+      </header>
+
+      <section class="readiness" aria-labelledby="readiness-title">
+        <div class="section-heading">
+          <h1 id="readiness-title">Readiness</h1>
+          <span id="readiness-code">LOCAL</span>
+        </div>
+        <div class="signal-grid" aria-label="Setup readiness">
+          <span data-signal="identity"><b>Identity</b><i></i></span>
+          <span data-signal="board"><b>Board</b><i></i></span>
+          <span data-signal="draft"><b>Draft</b><i></i></span>
+        </div>
+      </section>
+
+      <section class="profile-readout" aria-live="polite">
+        <span class="readout-label">Active profile</span>
+        <strong id="profile-name">No profile</strong>
+        <span id="profile-detail">Open the workspace to build a board.</span>
+      </section>
+
+      <button class="primary-action" id="open-workspace" type="button">Open workspace</button>
+      <button class="secondary-action" id="open-draft-center" type="button" hidden>Open command center</button>
+      <p class="privacy-line">Read-only Sleeper access. Rankings stay in this browser.</p>
+    </main>
+
+    <script src="../src/storage.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
