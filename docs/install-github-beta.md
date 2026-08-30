@@ -5,7 +5,9 @@ automatically; replace the extracted folder when a newer beta is published.
 
 ## Download And Verify
 
-1. Open the latest prerelease on the repository's Releases page.
+1. Open the repository's
+   [Releases page](https://github.com/ChristFollower873461/sleeper-draft-command-center/releases)
+   and choose the newest prerelease.
 2. Download the versioned `.zip` and matching `.zip.sha256` file.
 3. Put both files in the same folder.
 4. Verify the checksum.
