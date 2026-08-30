@@ -10,8 +10,9 @@ discovery, public starter board, CSV/JSON/paste imports, player matching, import
 review, multi-profile ranking editor, read-only live draft room, persistent
 manual draft room, release hardening, and the clean-profile real-Sleeper pilot
 are implemented and browser-tested. The
-[GitHub beta](https://github.com/ChristFollower873461/sleeper-draft-command-center/releases/tag/v0.2.0-beta.1)
-is live; Chrome Web Store packaging is in progress.
+[GitHub release candidate](https://github.com/ChristFollower873461/sleeper-draft-command-center/releases/tag/v0.2.1-rc.1)
+is live as `v0.2.1-rc.1`. Its checksum-identical package has been submitted as
+an unlisted Chrome Web Store item and is pending review.
 
 No private league data, account identifiers, or licensed ranking exports belong
 in this repository or its release artifacts.
@@ -29,8 +30,8 @@ in this repository or its release artifacts.
 7. Open a discovered draft in the full-screen command center, or create a manual
    room for an offline draft.
 
-An unlisted Chrome Web Store release is the next distribution target. That
-reduces installation to opening the release URL and choosing Add to Chrome.
+The submitted unlisted Chrome Web Store release will reduce installation to
+opening its release URL and choosing Add to Chrome after review approval.
 
 For the current GitHub beta, follow
 [`docs/install-github-beta.md`](docs/install-github-beta.md).
