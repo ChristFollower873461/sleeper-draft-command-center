@@ -2,8 +2,14 @@
   "manifest_version": 3,
   "name": "Sleeper Draft Command Center",
   "short_name": "Draft Command",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Use personal rankings and read-only Sleeper draft intelligence in live or manual rooms.",
+  "icons": {
+    "16": "extension/icons/icon-16.png",
+    "32": "extension/icons/icon-32.png",
+    "48": "extension/icons/icon-48.png",
+    "128": "extension/icons/icon-128.png"
+  },
   "permissions": [
     "storage"
   ],
@@ -13,7 +19,11 @@
   ],
   "action": {
     "default_title": "Sleeper Draft Command Center",
-    "default_popup": "extension/popup.html"
+    "default_popup": "extension/popup.html",
+    "default_icon": {
+      "16": "extension/icons/icon-16.png",
+      "32": "extension/icons/icon-32.png"
+    }
   },
   "background": {
     "service_worker": "extension/background.js"

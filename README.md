@@ -9,7 +9,9 @@ The installable Manifest V3 shell, local storage migrations, read-only Sleeper
 discovery, public starter board, CSV/JSON/paste imports, player matching, import
 review, multi-profile ranking editor, read-only live draft room, persistent
 manual draft room, release hardening, and the clean-profile real-Sleeper pilot
-are implemented and browser-tested. GitHub beta packaging is in progress.
+are implemented and browser-tested. The
+[GitHub beta](https://github.com/ChristFollower873461/sleeper-draft-command-center/releases/tag/v0.2.0-beta.1)
+is live; Chrome Web Store packaging is in progress.
 
 No private league data, account identifiers, or licensed ranking exports belong
 in this repository or its release artifacts.

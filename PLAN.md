@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-29
 
-Overall status: Phase 7 in progress
+Overall status: Phase 8 in progress
 
 Private build status: The private league extension v1.2.0 is frozen. Public work
 must not modify, package, or import its league board, account identifiers, or
@@ -82,9 +82,9 @@ Deferred until after v1:
 | SDC-021 | Add rank, room, roster, faller, tier, and recommendation views | Complete | Responsive visual suite |
 | SDC-022 | Audit permissions, storage, network access, and data export | Complete | Security and privacy QA note |
 | SDC-023 | Run second-profile and real Sleeper mock-draft pilot | Complete | Pilot issue log and signoff |
-| SDC-024 | Create dedicated GitHub repository and release workflow | In progress | CI-built ZIP and checksum |
-| SDC-025 | Publish install guide and GitHub beta | Pending | Clean-profile install test |
-| SDC-026 | Prepare Chrome Web Store listing and privacy disclosures | Pending | Submission packet review |
+| SDC-024 | Create dedicated GitHub repository and release workflow | Complete | CI-built ZIP and checksum |
+| SDC-025 | Publish install guide and GitHub beta | Complete | Clean-profile install test |
+| SDC-026 | Prepare Chrome Web Store listing and privacy disclosures | In progress | Submission packet review |
 | SDC-027 | Publish unlisted Web Store release | Pending | Direct-link installation proof |
 
 ## Phase Gates
@@ -179,10 +179,10 @@ Chrome profile and an imported ranking pack reaches both live and manual rooms.
 
 ## Immediate Next Work
 
-1. Complete SDC-024 with the dedicated repository, protected release workflow,
-   deterministic ZIP, and checksum.
-2. Complete SDC-025 with the public install guide, beta release, and clean
-   download installation proof.
+1. Complete SDC-026 with store listing copy, imagery, privacy disclosures, and a
+   protected release candidate.
+2. Complete SDC-027 by submitting the unlisted listing and proving direct-link
+   installation in a clean Chrome profile.
 
 ## Gate Record
 
@@ -198,3 +198,5 @@ Chrome profile and an imported ranking pack reaches both live and manual rooms.
   `docs/qa-gate-5-draft-runtime-2026-08-29.md`.
 - Gate 6: Passed on 2026-08-29. Evidence is in
   `docs/qa-gate-6-release-hardening-2026-08-29.md`.
+- Gate 7: Passed on 2026-08-29. Evidence is in
+  `docs/qa-gate-7-github-beta-2026-08-29.md`.

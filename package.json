@@ -1,6 +1,6 @@
 {
   "name": "sleeper-draft-command-center",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Public-safe Chrome extension for personal Sleeper draft rankings.",
   "scripts": {

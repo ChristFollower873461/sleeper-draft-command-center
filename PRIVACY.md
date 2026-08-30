@@ -36,3 +36,23 @@ between the user and Sleeper.
 
 The extension does not submit picks, trades, waivers, messages, roster changes,
 or payments to Sleeper.
+
+## Retention And Control
+
+Local data remains until the user deletes a ranking profile, replaces the
+connected Sleeper profile, clears the extension's site data, or uninstalls the
+extension. The project maintainers cannot access or delete this local data
+because it is never sent to a project-operated service.
+
+## Sharing And Limited Use
+
+The extension shares a Sleeper username and public identifiers only with
+Sleeper's public HTTPS APIs when necessary to provide account discovery, draft
+sync, and the public ranking baseline. It does not sell user data, use it for
+advertising or credit decisions, or allow project maintainers or other humans
+to read it.
+
+The extension's use and transfer of user data complies with the Chrome Web
+Store User Data Policy, including its Limited Use requirements. User data is
+used only to provide or improve the extension's single purpose: applying the
+user's rankings to read-only live or manual Sleeper draft context.
