@@ -143,6 +143,22 @@
     return order;
   }
 
+  function normalizeTradedPicks(raw, rounds) {
+    const byOriginalPick = new Map();
+    for (const candidate of (Array.isArray(raw) ? raw : []).slice(0, 1600)) {
+      const round = integer(candidate?.round, 1, rounds);
+      const rosterId = integer(candidate?.roster_id ?? candidate?.rosterId, 1, Number.MAX_SAFE_INTEGER);
+      const ownerId = integer(candidate?.owner_id ?? candidate?.ownerId, 1, Number.MAX_SAFE_INTEGER);
+      if (!round || !rosterId || !ownerId) continue;
+      byOriginalPick.set(`${round}:${rosterId}`, {
+        round,
+        roster_id: rosterId,
+        owner_id: ownerId,
+      });
+    }
+    return [...byOriginalPick.values()];
+  }
+
   function rosterIdForUser(rosters, userId) {
     const target = cleanText(userId, 80);
     const roster = (Array.isArray(rosters) ? rosters : []).find((candidate) => (
@@ -183,6 +199,10 @@
     const format = detectFormat(draft, league, rosterPositions, profile);
     const slotToRosterId = normalizeSlotMap(draft.slot_to_roster_id, teams);
     const draftOrder = normalizeDraftOrder(draft.draft_order, teams);
+    const tradedPicks = normalizeTradedPicks(
+      input.traded_picks ?? input.tradedPicks ?? draft.traded_picks,
+      rounds,
+    );
     const userId = cleanText(input.user?.user_id ?? input.user?.userId, 80);
     const explicitSlot = integer(input.user?.slot ?? input.user?.user_slot, 1, teams);
     const directSlot = integer(draftOrder[userId], 1, teams);
@@ -214,6 +234,7 @@
       reception_points: Number(scoring.rec ?? 0),
       draft_order: draftOrder,
       slot_to_roster_id: slotToRosterId,
+      traded_picks: tradedPicks,
       user_slot: userSlot,
       user_roster_id: userRosterId,
       warnings,
@@ -222,6 +243,7 @@
         type,
         draft_order: draftOrder,
         slot_to_roster_id: slotToRosterId,
+        traded_picks: tradedPicks,
         settings: { ...settings, teams, rounds, reversal_round: reversalRound },
       },
     };
@@ -248,6 +270,7 @@
     normalizeDraftContext,
     normalizeRosterPositions,
     normalizeScoring,
+    normalizeTradedPicks,
     profileForContext,
     rosterFromDraftSettings,
     rosterIdForUser,

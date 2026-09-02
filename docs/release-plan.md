@@ -22,3 +22,13 @@
 - Supply the privacy policy, screenshots, permission explanations, and release
   notes required by review.
 - Move to a public listing after real-draft testing and import compatibility QA.
+
+## 0.3: Faster Live Drafts
+
+- Poll posted picks every 300 ms while the active command center is visible.
+- Time out a stalled pick request after 2.2 seconds and retry without freezing
+  cached recommendations.
+- Keep future keeper slots out of recent-pick and position-run signals.
+- Remove drafted players by Sleeper ID and punctuation-tolerant name identity.
+- Follow acquired and traded-away picks when calculating roster turns.
+- Preserve the read-only, local-first, no-backend product boundary.

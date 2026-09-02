@@ -2,6 +2,9 @@
 
 Candidate version: `0.2.1`
 
+The newer `v0.3.0-beta.1` GitHub package is not part of this pending Store
+submission. Submit it separately only after the current review is resolved.
+
 Distribution: Unlisted
 
 Primary language: English

@@ -60,6 +60,7 @@
       pick_timer: DraftOrder.asInteger(context.pick_timer),
       user_slot: DraftOrder.asInteger(context.user_slot),
       user_roster_id: DraftOrder.asInteger(context.user_roster_id),
+      traded_picks: clone(Array.isArray(context.traded_picks) ? context.traded_picks : []),
       roster_positions: (Array.isArray(context.roster_positions) ? context.roster_positions : []).slice(0, 40),
       scoring: clone(context.scoring || {}),
     };
@@ -127,6 +128,7 @@
       },
       draft_order: {},
       slot_to_roster_id: slotMap,
+      traded_picks: clone(config.traded_picks || []),
     };
   }
 

@@ -1,6 +1,6 @@
 # Sleeper Draft Command Center Build Plan
 
-Last updated: 2026-08-29
+Last updated: 2026-09-02
 
 Overall status: Phase 8 in progress
 
@@ -86,6 +86,8 @@ Deferred until after v1:
 | SDC-025 | Publish install guide and GitHub beta | Complete | Clean-profile install test |
 | SDC-026 | Prepare Chrome Web Store listing and privacy disclosures | In progress | Submission packet review |
 | SDC-027 | Publish unlisted Web Store release | Pending | Direct-link installation proof |
+| SDC-028 | Harden live sync, keeper state, drafted-player filtering, and traded picks | Complete | Unit and headed browser runtime tests |
+| SDC-029 | Publish and surface the v0.3 public beta | In progress | GitHub release, project page, and discovery metadata |
 
 ## Phase Gates
 

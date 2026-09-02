@@ -35,7 +35,7 @@
         "last_draft_id": { "type": ["string", "null"], "maxLength": 80 },
         "theme": { "const": "command_center" },
         "dock": { "enum": ["left", "right"] },
-        "poll_interval_ms": { "type": "integer", "minimum": 1000, "maximum": 60000 }
+        "poll_interval_ms": { "type": "integer", "minimum": 250, "maximum": 60000 }
       }
     }
   },
@@ -153,6 +153,20 @@
         "pick_timer": { "type": ["integer", "null"], "minimum": 0, "maximum": 86400 },
         "user_slot": { "type": ["integer", "null"], "minimum": 1, "maximum": 32 },
         "user_roster_id": { "type": ["integer", "null"], "minimum": 1 },
+        "traded_picks": {
+          "type": "array",
+          "maxItems": 1600,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["round", "roster_id", "owner_id"],
+            "properties": {
+              "round": { "type": "integer", "minimum": 1, "maximum": 50 },
+              "roster_id": { "type": "integer", "minimum": 1 },
+              "owner_id": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
         "roster_positions": {
           "type": "array",
           "maxItems": 40,

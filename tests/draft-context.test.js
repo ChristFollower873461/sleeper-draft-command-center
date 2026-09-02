@@ -119,3 +119,15 @@ test("profile context is cloned and receives detected league settings", () => {
   adapted.league_settings.roster_positions.push("BN");
   assert.equal(context.roster_positions.includes("BN"), false);
 });
+
+test("draft context normalizes current traded-pick ownership", () => {
+  const result = Context.normalizeDraftContext({
+    draft: draft(),
+    traded_picks: [
+      { round: "3", roster_id: "102", owner_id: "107", extra: "discard" },
+      { round: 99, roster_id: 101, owner_id: 107 },
+    ],
+  });
+  assert.deepEqual(result.traded_picks, [{ round: 3, roster_id: 102, owner_id: 107 }]);
+  assert.deepEqual(result.engine_draft.traded_picks, result.traded_picks);
+});

@@ -62,6 +62,69 @@
     ));
   }
 
+  function pickOwnerRosterId(roundValue, slotValue, draft, tradedPicks = null) {
+    const round = asInteger(roundValue);
+    const slot = asInteger(slotValue);
+    const teams = asInteger(draft?.settings?.teams ?? draft?.teams);
+    if (!round || !slot || !validDraftDimensions(teams) || slot > teams) return null;
+    const slotMap = draft?.slot_to_roster_id || {};
+    const originalRosterId = Object.keys(slotMap).length
+      ? asInteger(slotMap[String(slot)] ?? slotMap[slot])
+      : slot;
+    if (!originalRosterId) return null;
+    const trades = Array.isArray(tradedPicks)
+      ? tradedPicks
+      : Array.isArray(draft?.traded_picks) ? draft.traded_picks : [];
+    const trade = trades.find((candidate) => (
+      asInteger(candidate?.round) === round
+      && asInteger(candidate?.roster_id ?? candidate?.rosterId) === originalRosterId
+    ));
+    return asInteger(trade?.owner_id ?? trade?.ownerId, originalRosterId);
+  }
+
+  function pickRosterId(pick, draft, tradedPicks = null) {
+    const teams = asInteger(draft?.settings?.teams ?? draft?.teams);
+    if (!validDraftDimensions(teams)) return null;
+    const rounds = asInteger(draft?.settings?.rounds ?? draft?.rounds, 50);
+    const reversal = normalizeReversalRound(
+      draft?.settings?.reversal_round ?? draft?.reversal_round,
+      rounds,
+    );
+    const pickNumber = asInteger(pick?.pick_no ?? pick?.pickNo);
+    const round = asInteger(pick?.round, pickNumber ? Math.ceil(pickNumber / teams) : null);
+    const slot = asInteger(
+      pick?.draft_slot ?? pick?.draftSlot,
+      pickNumber ? slotForPickNumber(pickNumber, teams, reversal) : null,
+    );
+    return asInteger(
+      pick?.roster_id ?? pick?.rosterId,
+      pickOwnerRosterId(round, slot, draft, tradedPicks),
+    );
+  }
+
+  function rosterPickNumbers(rosterValue, draft, tradedPicks = null, fallbackSlotValue = null) {
+    const rosterId = asInteger(rosterValue);
+    const teams = asInteger(draft?.settings?.teams ?? draft?.teams);
+    const rounds = asInteger(draft?.settings?.rounds ?? draft?.rounds);
+    const fallbackSlot = asInteger(fallbackSlotValue);
+    if (!validDraftDimensions(teams, rounds)) return [];
+    const reversal = normalizeReversalRound(
+      draft?.settings?.reversal_round ?? draft?.reversal_round,
+      rounds,
+    );
+    if (!rosterId) {
+      return fallbackSlot ? userPickNumbers(fallbackSlot, teams, rounds, reversal) : [];
+    }
+    const picks = [];
+    for (let round = 1; round <= rounds; round += 1) {
+      for (let slot = 1; slot <= teams; slot += 1) {
+        if (pickOwnerRosterId(round, slot, draft, tradedPicks) !== rosterId) continue;
+        picks.push(pickNumberForRound(round, slot, teams, reversal));
+      }
+    }
+    return picks.sort((left, right) => left - right);
+  }
+
   function currentPickNumber(picks, teamsValue, roundsValue) {
     const teams = asInteger(teamsValue);
     const rounds = asInteger(roundsValue);
@@ -203,7 +266,10 @@
     manualPickForPlayer,
     mergeDraftPicks,
     normalizeReversalRound,
+    pickOwnerRosterId,
     pickNumberForRound,
+    pickRosterId,
+    rosterPickNumbers,
     slotForPickNumber,
     undoLatestManualPick,
     userPickNumbers,
@@ -213,4 +279,3 @@
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (globalScope) globalScope.SDCCDraftOrder = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
-

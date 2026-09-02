@@ -82,3 +82,10 @@ test("pick signature is order independent and changes with identity", () => {
   assert.equal(Runtime.pickSignature(first), Runtime.pickSignature(second));
   assert.notEqual(Runtime.pickSignature(first), Runtime.pickSignature([{ pick_no: 1, player_id: "c" }]));
 });
+
+test("live polling is tight while drafting and backs off when hidden", () => {
+  assert.equal(Runtime.livePollDelay(300, "drafting", false), 300);
+  assert.equal(Runtime.livePollDelay(300, "pre_draft", false), 1000);
+  assert.equal(Runtime.livePollDelay(300, "drafting", true), 2500);
+  assert.equal(Runtime.livePollDelay(undefined, "drafting", false), 300);
+});

@@ -45,6 +45,7 @@ function context(overrides = {}) {
     pick_timer: 120,
     user_slot: 1,
     user_roster_id: 101,
+    traded_picks: [{ round: 2, roster_id: 102, owner_id: 101 }],
     roster_positions: ["QB", "RB", "WR", "TE", "BN", "BN"],
     scoring: { rec: 0.5 },
     ...overrides,
@@ -64,6 +65,7 @@ test("session creation stores bounded config and preserves existing progress", (
   const session = state.draft_sessions["draft-one"];
   assert.equal(session.mode, "manual");
   assert.equal(session.draft_config.status, "paused");
+  assert.deepEqual(session.draft_config.traded_picks, [{ round: 2, roster_id: 102, owner_id: 101 }]);
   assert.deepEqual(session.pinned_player_ids, ["player-2"]);
   assert.equal(state.settings.last_draft_id, "draft-one");
 });

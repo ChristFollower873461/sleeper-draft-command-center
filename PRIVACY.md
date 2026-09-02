@@ -10,8 +10,9 @@ The extension stores the following data in `chrome.storage.local`:
 - Sleeper username and public user ID.
 - Ranking profiles, player IDs, ranks, tiers, ADP values, notes, format, roster
   positions, and scoring settings supplied or approved by the user.
-- Draft and league IDs, roster and slot IDs, cached posted picks, manual picks,
-  pinned players, draft configuration, view settings, and sync timestamps.
+- Draft and league IDs, roster and slot IDs, cached posted picks, traded-pick
+  ownership, manual picks, pinned players, draft configuration, view settings,
+  and sync timestamps.
 - A time-limited cache of Sleeper's public player directory.
 
 Extension storage is restricted to trusted extension pages. The Sleeper content

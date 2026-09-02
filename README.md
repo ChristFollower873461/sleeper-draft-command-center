@@ -5,14 +5,14 @@ room context, and a manual offline draft board into Sleeper drafts.
 
 ## Status
 
-The installable Manifest V3 shell, local storage migrations, read-only Sleeper
-discovery, public starter board, CSV/JSON/paste imports, player matching, import
-review, multi-profile ranking editor, read-only live draft room, persistent
-manual draft room, release hardening, and the clean-profile real-Sleeper pilot
-are implemented and browser-tested. The
-[GitHub release candidate](https://github.com/ChristFollower873461/sleeper-draft-command-center/releases/tag/v0.2.1-rc.1)
-is live as `v0.2.1-rc.1`. Its checksum-identical package has been submitted as
-an unlisted Chrome Web Store item and is pending review.
+The installable Manifest V3 extension, local ranking profiles, public starter
+board, CSV/JSON/paste imports, ranking editor, read-only live command center,
+and persistent manual room are implemented and browser-tested. The current
+[GitHub beta](https://github.com/ChristFollower873461/sleeper-draft-command-center/releases/tag/v0.3.0-beta.1)
+is `v0.3.0-beta.1`. It adds subsecond active-draft sync, fast recovery from a
+stalled pick request, keeper-safe room signals, defensive drafted-player
+filtering, and traded-pick ownership. The older `v0.2.1` package remains the
+unlisted Chrome Web Store candidate while that submission is under review.
 
 No private league data, account identifiers, or licensed ranking exports belong
 in this repository or its release artifacts.
@@ -35,6 +35,18 @@ opening its release URL and choosing Add to Chrome after review approval.
 
 For the current GitHub beta, follow
 [`docs/install-github-beta.md`](docs/install-github-beta.md).
+
+## Live Sync
+
+During an active draft, the visible command center checks Sleeper's posted-pick
+endpoint every 300 ms and refreshes recommendations only when the pick identity
+changes. A request is abandoned after 2.2 seconds so one slow response cannot
+freeze the board. Hidden tabs back off to 2.5 seconds, room metadata refreshes
+separately, and returning online or refocusing the command center triggers an
+immediate check.
+
+This works directly against Sleeper's public read-only API. It does not need
+Supabase or another project-operated backend.
 
 ## Product Rules
 

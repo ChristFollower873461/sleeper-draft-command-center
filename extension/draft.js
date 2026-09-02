@@ -24,6 +24,9 @@
     lastPickSignature: "",
     pollTimer: null,
     polling: false,
+    pollQueued: false,
+    metadataRefreshing: false,
+    lastMetadataRefresh: 0,
     writeChain: Promise.resolve(),
     writeSequence: 0,
   };
@@ -360,11 +363,12 @@
       const existing = app.state.draft_sessions[draftId] || null;
       const profile = activeProfile(existing?.ranking_profile_id);
       if (!profile) throw new Error("Create a ranking profile before opening a draft");
-      const bundle = await Api.fetchDraftBundle(draftId);
+      const bundle = await Api.fetchDraftBundle(draftId, { timeoutMs: 5000, cacheBust: true });
       const context = Context.normalizeDraftContext({
         draft: bundle.draft,
         league: bundle.league,
         rosters: bundle.rosters,
+        traded_picks: bundle.traded_picks,
         user: app.state.user,
         profile,
       });
@@ -380,10 +384,11 @@
       await writeState(nextState);
       app.context = context;
       app.rosters = bundle.rosters;
+      app.lastMetadataRefresh = Date.now();
       app.lastPickSignature = Runtime.pickSignature(bundle.picks);
       app.activeTab = roomSession().ui.active_tab;
       rebuildRuntime();
-      setSync(`Live / ${bundle.picks.length} picks`, "online");
+      setSync(`Live / ${app.runtime.state.live_pick_count} posted`, "online");
       if (restartPolling && roomSession().mode === "live" && !app.runtime.state.complete) schedulePoll();
     } catch (error) {
       const saved = app.state.draft_sessions[draftId];
@@ -411,27 +416,85 @@
 
   function schedulePoll() {
     stopPolling();
-    const delay = app.state.settings.poll_interval_ms || 1500;
+    const delay = Runtime.livePollDelay(
+      app.state.settings.poll_interval_ms,
+      app.context?.status,
+      document.hidden,
+    );
     app.pollTimer = setTimeout(refreshLivePicks, delay);
   }
 
-  async function refreshLivePicks() {
-    if (app.polling || !app.draftId || roomSession()?.mode !== "live") return;
-    app.polling = true;
+  async function refreshLiveMetadata() {
+    if (app.metadataRefreshing || !app.draftId || roomSession()?.mode !== "live") return;
+    app.metadataRefreshing = true;
+    app.lastMetadataRefresh = Date.now();
     try {
-      const picks = await Api.fetchDraftPicks(app.draftId);
+      const profile = activeProfile(roomSession()?.ranking_profile_id);
+      const bundle = await Api.fetchDraftMetadataBundle(app.draftId, {
+        timeoutMs: 5000,
+        cacheBust: true,
+      });
+      const context = Context.normalizeDraftContext({
+        draft: bundle.draft,
+        league: bundle.league,
+        rosters: bundle.rosters,
+        traded_picks: bundle.traded_picks,
+        user: app.state.user,
+        profile,
+      });
+      const previous = JSON.stringify({
+        status: app.context?.status,
+        slot: app.context?.user_slot,
+        roster: app.context?.user_roster_id,
+        trades: app.context?.traded_picks,
+      });
+      const next = JSON.stringify({
+        status: context.status,
+        slot: context.user_slot,
+        roster: context.user_roster_id,
+        trades: context.traded_picks,
+      });
+      app.context = context;
+      app.rosters = bundle.rosters;
+      if (previous !== next) rebuildRuntime();
+    } catch (_error) {
+      // Posted picks remain authoritative if slower room metadata is unavailable.
+    } finally {
+      app.metadataRefreshing = false;
+    }
+  }
+
+  async function refreshLivePicks() {
+    if (!app.draftId || roomSession()?.mode !== "live") return;
+    if (app.polling) {
+      app.pollQueued = true;
+      return;
+    }
+    app.polling = true;
+    if (Date.now() - app.lastMetadataRefresh >= 30000) refreshLiveMetadata();
+    try {
+      const picks = await Api.fetchDraftPicks(app.draftId, { timeoutMs: 2200, cacheBust: true });
       const signature = Runtime.pickSignature(picks);
       if (signature !== app.lastPickSignature) {
-        await writeState(Sessions.cacheLivePicks(app.state, app.draftId, picks));
+        const persisted = writeState(Sessions.cacheLivePicks(app.state, app.draftId, picks));
         app.lastPickSignature = signature;
         rebuildRuntime();
+        await persisted;
       }
-      setSync(`Live / ${picks.length} picks`, "online");
+      setSync(`Live / ${app.runtime.state.live_pick_count} posted`, "online");
     } catch (_error) {
+      const cached = roomSession()?.cached_live_picks || [];
+      app.lastPickSignature = Runtime.pickSignature(cached);
+      rebuildRuntime();
       setSync("Offline / cached picks", "offline");
     } finally {
       app.polling = false;
-      if (roomSession()?.mode === "live" && !app.runtime?.state.complete) schedulePoll();
+      if (app.pollQueued) {
+        app.pollQueued = false;
+        app.pollTimer = setTimeout(refreshLivePicks, 0);
+      } else if (roomSession()?.mode === "live" && !app.runtime?.state.complete) {
+        schedulePoll();
+      }
     }
   }
 
@@ -489,7 +552,7 @@
     try {
       await writeState(Sessions.togglePinnedPlayer(app.state, app.draftId, playerId));
       rebuildRuntime();
-      setSync(app.runtime.session.mode === "manual" ? "Manual / local" : `Live / ${app.runtime.session.cached_live_picks.length} picks`, app.runtime.session.mode === "manual" ? "waiting" : "online");
+      setSync(app.runtime.session.mode === "manual" ? "Manual / local" : `Live / ${app.runtime.state.live_pick_count} posted`, app.runtime.session.mode === "manual" ? "waiting" : "online");
     } catch (error) {
       setSync(error.message, "error");
     }
@@ -619,6 +682,12 @@
       if (profile) elements.manualFormat.value = profile.format;
     });
     elements.manualSetupForm.addEventListener("submit", createManualRoom);
+    document.addEventListener("visibilitychange", () => {
+      if (roomSession()?.mode !== "live" || app.runtime?.state.complete) return;
+      if (document.hidden) schedulePoll();
+      else refreshLivePicks();
+    });
+    window.addEventListener("online", () => refreshLivePicks());
     window.addEventListener("pagehide", stopPolling);
   }
 

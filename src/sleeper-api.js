@@ -5,7 +5,7 @@
   const DATA_ORIGIN = "https://api.sleeper.com";
   const ALLOWED_ORIGINS = new Set([API_ORIGIN, DATA_ORIGIN]);
   const POSITIONS = new Set(["QB", "RB", "WR", "TE", "K", "DEF"]);
-  const DEFAULT_TIMEOUT_MS = 12000;
+  const DEFAULT_TIMEOUT_MS = 5000;
 
   class SleeperApiError extends Error {
     constructor(message, options = {}) {
@@ -38,7 +38,11 @@
   }
 
   async function fetchJson(value, options = {}) {
-    const url = approvedUrl(value);
+    const url = new URL(approvedUrl(value).toString());
+    if (options.cacheBust) {
+      const token = options.cacheBust === true ? Date.now() : options.cacheBust;
+      url.searchParams.set("_sdcc", cleanText(token, 40));
+    }
     const fetchImpl = options.fetchImpl || globalScope?.fetch;
     if (typeof fetchImpl !== "function") {
       throw new SleeperApiError("Fetch is unavailable", { code: "FETCH_UNAVAILABLE" });
@@ -161,6 +165,17 @@
     return picks;
   }
 
+  async function fetchDraftTradedPicks(draftId, options = {}) {
+    const picks = await fetchJson(
+      appUrl(`/v1/draft/${safeSegment(draftId, "Draft ID")}/traded_picks`),
+      options,
+    );
+    if (!Array.isArray(picks)) {
+      throw new SleeperApiError("Traded picks response was malformed", { code: "MALFORMED_RESPONSE" });
+    }
+    return picks;
+  }
+
   async function fetchLeague(leagueId, options = {}) {
     const league = await fetchJson(appUrl(`/v1/league/${safeSegment(leagueId, "League ID")}`), options);
     if (!league || typeof league !== "object" || Array.isArray(league) || !cleanText(league.league_id, 80)) {
@@ -180,15 +195,23 @@
     return rosters;
   }
 
-  async function fetchDraftBundle(draftId, options = {}) {
+  async function fetchDraftMetadataBundle(draftId, options = {}) {
     const draft = await fetchDraft(draftId, options);
     const leagueId = cleanText(draft?.league_id, 80);
-    const [picks, league, rosters] = await Promise.all([
-      fetchDraftPicks(draftId, options),
+    const [league, rosters, tradedPicks] = await Promise.all([
       leagueId ? fetchLeague(leagueId, options) : Promise.resolve(null),
       leagueId ? fetchLeagueRosters(leagueId, options) : Promise.resolve([]),
+      fetchDraftTradedPicks(draftId, options).catch(() => []),
     ]);
-    return { draft, picks, league, rosters };
+    return { draft, league, rosters, traded_picks: tradedPicks };
+  }
+
+  async function fetchDraftBundle(draftId, options = {}) {
+    const [metadata, picks] = await Promise.all([
+      fetchDraftMetadataBundle(draftId, options),
+      fetchDraftPicks(draftId, options),
+    ]);
+    return { ...metadata, picks };
   }
 
   function playerName(raw, playerId) {
@@ -341,6 +364,7 @@
   const api = {
     API_ORIGIN,
     DATA_ORIGIN,
+    DEFAULT_TIMEOUT_MS,
     SleeperApiError,
     adpKeyFor,
     approvedUrl,
@@ -349,7 +373,9 @@
     fetchAdp,
     fetchDraft,
     fetchDraftBundle,
+    fetchDraftMetadataBundle,
     fetchDraftPicks,
+    fetchDraftTradedPicks,
     fetchJson,
     fetchNflState,
     fetchLeague,
