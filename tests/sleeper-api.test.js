@@ -32,6 +32,21 @@ test("only approved Sleeper HTTPS origins can be fetched with GET", async () => 
   await Api.fetchJson("https://api.sleeper.app/v1/state/nfl", { fetchImpl });
   assert.equal(fetchImpl.calls[0].options.method, "GET");
   assert.equal(fetchImpl.calls[0].options.credentials, "omit");
+  assert.equal(Api.DEFAULT_TIMEOUT_MS, 5000);
+});
+
+test("cache-busted reads stay on the approved endpoint", async () => {
+  const calls = [];
+  await Api.fetchJson("https://api.sleeper.app/v1/draft/draft-one/picks", {
+    cacheBust: "fixture",
+    fetchImpl: async (url) => {
+      calls.push(url);
+      return response([]);
+    },
+  });
+  const requested = new URL(calls[0]);
+  assert.equal(requested.pathname, "/v1/draft/draft-one/picks");
+  assert.equal(requested.searchParams.get("_sdcc"), "fixture");
 });
 
 test("username discovery resolves public identity, leagues, and drafts", async () => {
@@ -84,6 +99,8 @@ test("draft bundle joins a draft, picks, league, and rosters with GET requests",
       ? { draft_id: "draft-one", league_id: "league-one", settings: { teams: 12, rounds: 17 } }
       : pathname === "/v1/draft/draft-one/picks"
         ? [{ pick_no: 1, player_id: "player-one" }]
+        : pathname === "/v1/draft/draft-one/traded_picks"
+          ? [{ round: 2, roster_id: 102, owner_id: 101 }]
         : pathname === "/v1/league/league-one"
           ? { league_id: "league-one", roster_positions: ["QB", "RB", "WR"] }
           : [{ roster_id: 1, owner_id: "coach" }];
@@ -94,11 +111,13 @@ test("draft bundle joins a draft, picks, league, and rosters with GET requests",
   assert.equal(bundle.picks.length, 1);
   assert.equal(bundle.league.league_id, "league-one");
   assert.equal(bundle.rosters[0].owner_id, "coach");
+  assert.deepEqual(bundle.traded_picks, [{ round: 2, roster_id: 102, owner_id: 101 }]);
   assert.deepEqual(urls, [
     ["/v1/draft/draft-one", "GET"],
     ["/v1/draft/draft-one/picks", "GET"],
     ["/v1/league/league-one", "GET"],
     ["/v1/league/league-one/rosters", "GET"],
+    ["/v1/draft/draft-one/traded_picks", "GET"],
   ]);
 });
 
@@ -107,12 +126,20 @@ test("draft bundle skips league calls for standalone mocks", async () => {
   const fetchImpl = async (url) => {
     const pathname = new URL(url).pathname;
     paths.push(pathname);
-    return response(pathname.endsWith("/picks") ? [] : { draft_id: "mock-one", settings: { teams: 10, rounds: 15 } });
+    return response(
+      pathname.endsWith("/picks") || pathname.endsWith("/traded_picks")
+        ? []
+        : { draft_id: "mock-one", settings: { teams: 10, rounds: 15 } },
+    );
   };
   const bundle = await Api.fetchDraftBundle("mock-one", { fetchImpl });
   assert.equal(bundle.league, null);
   assert.deepEqual(bundle.rosters, []);
-  assert.deepEqual(paths, ["/v1/draft/mock-one", "/v1/draft/mock-one/picks"]);
+  assert.deepEqual(paths, [
+    "/v1/draft/mock-one",
+    "/v1/draft/mock-one/picks",
+    "/v1/draft/mock-one/traded_picks",
+  ]);
 });
 
 test("player catalog normalizes skill players and team defenses", () => {

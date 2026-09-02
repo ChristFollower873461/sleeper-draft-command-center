@@ -3,6 +3,10 @@
 The GitHub beta is an unpacked Chrome extension. It does not update
 automatically; replace the extracted folder when a newer beta is published.
 
+The current beta is `v0.3.0-beta.1`. Existing unpacked installs must download
+the new ZIP and reload the newly extracted folder to receive the faster live
+sync and keeper/traded-pick fixes.
+
 ## Download And Verify
 
 1. Open the repository's

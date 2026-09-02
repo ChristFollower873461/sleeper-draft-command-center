@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Sleeper Draft Command Center",
   "short_name": "Draft Command",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Use personal rankings and read-only Sleeper draft intelligence in live or manual rooms.",
   "icons": {
     "16": "extension/icons/icon-16.png",

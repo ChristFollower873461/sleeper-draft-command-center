@@ -99,7 +99,7 @@
         last_draft_id: null,
         theme: "command_center",
         dock: "right",
-        poll_interval_ms: 1500,
+        poll_interval_ms: 300,
       },
     };
   }
@@ -285,6 +285,18 @@
     const format = FORMATS.has(source.format) ? source.format : "custom";
     const rounds = integerInRange(source.rounds, 1, 50, null);
     const reversal = integerInRange(source.reversal_round ?? source.reversalRound, 0, 50, 0);
+    const tradedPicks = [];
+    const seenTradedPicks = new Set();
+    const rawTradedPicks = source.traded_picks ?? source.tradedPicks;
+    for (const candidate of (Array.isArray(rawTradedPicks) ? rawTradedPicks : []).slice(0, MAX_DRAFT_PICKS)) {
+      const round = integerInRange(candidate?.round, 1, rounds || 50, null);
+      const rosterId = integerInRange(candidate?.roster_id ?? candidate?.rosterId, 1, Number.MAX_SAFE_INTEGER, null);
+      const ownerId = integerInRange(candidate?.owner_id ?? candidate?.ownerId, 1, Number.MAX_SAFE_INTEGER, null);
+      const key = `${round}:${rosterId}`;
+      if (!round || !rosterId || !ownerId || seenTradedPicks.has(key)) continue;
+      seenTradedPicks.add(key);
+      tradedPicks.push({ round, roster_id: rosterId, owner_id: ownerId });
+    }
     return {
       name: cleanString(source.name, 80) || "Draft room",
       type: source.type === "snake" ? "snake" : "snake",
@@ -296,6 +308,7 @@
       pick_timer: integerInRange(source.pick_timer ?? source.pickTimer, 0, 86400, null),
       user_slot: integerInRange(source.user_slot ?? source.userSlot, 1, 32, null),
       user_roster_id: integerInRange(source.user_roster_id ?? source.userRosterId, 1, Number.MAX_SAFE_INTEGER, null),
+      traded_picks: tradedPicks,
       roster_positions: (Array.isArray(source.roster_positions) ? source.roster_positions : [])
         .slice(0, 40)
         .map((position) => cleanString(position, 30).toUpperCase())
@@ -384,7 +397,9 @@
         last_draft_id: cleanId(settings.last_draft_id, "") || null,
         theme: "command_center",
         dock: settings.dock === "left" ? "left" : "right",
-        poll_interval_ms: integerInRange(settings.poll_interval_ms, 1000, 60000, 1500),
+        poll_interval_ms: Number(settings.poll_interval_ms) === 1500
+          ? 300
+          : integerInRange(settings.poll_interval_ms, 250, 60000, 300),
       },
     };
   }

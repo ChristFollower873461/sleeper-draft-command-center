@@ -203,6 +203,7 @@ async function run() {
       else if (pathname === "/v1/draft/live-superflex") body = draftFixture("superflex");
       else if (pathname === "/v1/draft/live-one-qb/picks") body = oneQbPicks;
       else if (pathname === "/v1/draft/live-superflex/picks") body = superflexPicks;
+      else if (pathname.endsWith("/traded_picks")) body = [];
       else if (pathname === "/v1/league/league-one-qb") body = leagueFixture("one_qb");
       else if (pathname === "/v1/league/league-superflex") body = leagueFixture("superflex");
       else if (pathname.endsWith("/rosters")) {

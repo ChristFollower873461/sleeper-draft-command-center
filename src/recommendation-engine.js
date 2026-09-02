@@ -44,6 +44,11 @@
       .trim();
   }
 
+  function nameKeys(value) {
+    const normalized = normalizeName(value);
+    return normalized ? [normalized, normalized.replace(/\s+/g, "")] : [];
+  }
+
   function profileRosterPositions(profile) {
     const supplied = profile?.league_settings?.roster_positions;
     const source = Array.isArray(supplied) && supplied.length
@@ -202,7 +207,25 @@
     return count >= 3 ? { position, count, kind: "wave" } : null;
   }
 
-  function roomIntelligence(profile, draft, picks, state, playerById) {
+  function availablePlayers(players, picks) {
+    const pool = Array.isArray(players) ? players : [];
+    const playerById = new Map(pool.map((player) => [String(player.sleeper_id), player]));
+    const pickedIds = new Set(
+      (Array.isArray(picks) ? picks : [])
+        .map((pick) => String(pick?.player_id ?? pick?.metadata?.player_id ?? ""))
+        .filter(Boolean),
+    );
+    const pickedNames = new Set();
+    for (const pick of Array.isArray(picks) ? picks : []) {
+      for (const key of nameKeys(playerForPick(pick, playerById).player)) pickedNames.add(key);
+    }
+    return pool.filter((player) => (
+      !pickedIds.has(String(player.sleeper_id))
+      && nameKeys(player.player).every((key) => !pickedNames.has(key))
+    ));
+  }
+
+  function roomIntelligence(profile, draft, picks, state, playerById, tradedPicks = null) {
     const reversalRound = DraftOrder.normalizeReversalRound(
       draft?.settings?.reversal_round,
       state.rounds,
@@ -216,17 +239,21 @@
           ?? DraftOrder.slotForPickNumber(pick.pick_no, state.teams, reversalRound),
         source: pick.source || (pick.manual ? "manual" : "live"),
       }));
+    const postedPicks = resolved.filter((pick) => pick.pick_no < state.current_pick);
     const aheadPickNumbers = [];
     for (let pick = state.current_pick; pick < (state.decision_pick || state.current_pick); pick += 1) {
       aheadPickNumbers.push(pick);
     }
-    const aheadSlots = [...new Set(
-      aheadPickNumbers.map((pick) => DraftOrder.slotForPickNumber(pick, state.teams, reversalRound)),
-    )].filter(Boolean);
+    const aheadSlots = [...new Set(aheadPickNumbers.map((pick) => {
+      const round = Math.ceil(pick / state.teams);
+      const slot = DraftOrder.slotForPickNumber(pick, state.teams, reversalRound);
+      return DraftOrder.pickOwnerRosterId(round, slot, draft, tradedPicks) ?? slot;
+    }))].filter(Boolean);
     const bySlot = new Map();
     for (const pick of resolved) {
-      if (!bySlot.has(pick.draft_slot)) bySlot.set(pick.draft_slot, []);
-      bySlot.get(pick.draft_slot).push(pick);
+      const ownerRosterId = DraftOrder.pickRosterId(pick, draft, tradedPicks) ?? pick.draft_slot;
+      if (!bySlot.has(ownerRosterId)) bySlot.set(ownerRosterId, []);
+      bySlot.get(ownerRosterId).push(pick);
     }
     const demandTargets = { ...state.targets };
     if ((state.decision_round || 1) < specialistRound(state)) {
@@ -249,8 +276,8 @@
       .sort((left, right) => right.fall - left.fall || left.player.rank - right.player.rank)
       .slice(0, 20);
     return {
-      recent_picks: resolved.slice(0, 10),
-      run_signal: detectPositionRun(resolved.slice(0, 8)),
+      recent_picks: postedPicks.slice(0, 10),
+      run_signal: detectPositionRun(postedPicks.slice(0, 8)),
       ahead_pick_numbers: aheadPickNumbers,
       ahead_slots: aheadSlots,
       ahead_demand: aheadDemand,
@@ -259,7 +286,7 @@
     };
   }
 
-  function makeDraftState(profile, draft, picks = [], rosters = [], user = {}) {
+  function makeDraftState(profile, draft, picks = [], rosters = [], user = {}, tradedPicks = null) {
     const errors = validateInputs(profile, draft);
     if (errors.length) throw new DraftEngineInputError(errors);
     const teams = DraftOrder.asInteger(draft.settings?.teams ?? draft.teams);
@@ -272,37 +299,35 @@
     const userId = String(user.user_id ?? user.userId ?? "");
     const rosterId = DraftOrder.asInteger(user.roster_id ?? user.rosterId)
       ?? userRosterId(rosters, userId)
-      ?? reverseLookup(draft.slot_to_roster_id, slot);
+      ?? DraftOrder.asInteger(draft.slot_to_roster_id?.[String(slot)] ?? draft.slot_to_roster_id?.[slot]);
     const playerById = new Map(
       profile.players.map((player) => [String(player.sleeper_id), {
         ...player,
         position: String(player.position).toUpperCase(),
       }]),
     );
-    const pickedPlayers = picks.map((pick) => playerForPick(pick, playerById));
     const selected = picks
       .filter((pick) => (
-        (rosterId != null && DraftOrder.asInteger(pick.roster_id) === rosterId)
+        (rosterId != null && DraftOrder.pickRosterId(pick, draft, tradedPicks) === rosterId)
         || (userId && String(pick.picked_by || "") === userId)
-        || (slot != null && DraftOrder.asInteger(pick.draft_slot) === slot)
+        || (
+          rosterId == null
+          && slot != null
+          && DraftOrder.asInteger(pick.draft_slot) === slot
+        )
       ))
       .sort((left, right) => asNumber(left.pick_no) - asNumber(right.pick_no))
       .map((pick) => ({ ...playerForPick(pick, playerById), pick_no: asNumber(pick.pick_no) }));
     const pickedIds = new Set(picks.map((pick) => String(pick.player_id || pick.metadata?.player_id || "")));
-    const pickedNames = new Set(pickedPlayers.map((player) => normalizeName(player.player)));
-    const available = profile.players
-      .filter((player) => (
-        !pickedIds.has(String(player.sleeper_id))
-        && !pickedNames.has(normalizeName(player.player))
-      ))
+    const available = availablePlayers(profile.players, picks)
       .map((player) => ({ ...player, position: String(player.position).toUpperCase() }))
       .sort((left, right) => asNumber(left.rank, 999) - asNumber(right.rank, 999));
     const currentPick = DraftOrder.currentPickNumber(picks, teams, rounds);
-    const ourPicks = slot == null
-      ? []
-      : DraftOrder.userPickNumbers(slot, teams, rounds, reversalRound);
-    const decisionPick = ourPicks.find((pick) => pick >= currentPick) || null;
-    const returnPick = ourPicks.find((pick) => decisionPick != null && pick > decisionPick) || null;
+    const ourPicks = DraftOrder.rosterPickNumbers(rosterId, draft, tradedPicks, slot);
+    const filledPickNumbers = new Set(picks.map((pick) => asNumber(pick.pick_no)));
+    const openOurPicks = ourPicks.filter((pick) => !filledPickNumbers.has(pick));
+    const decisionPick = openOurPicks.find((pick) => pick >= currentPick) || null;
+    const returnPick = openOurPicks.find((pick) => decisionPick != null && pick > decisionPick) || null;
     const targets = rosterTargets(profile);
     const state = {
       format: profile.format,
@@ -323,17 +348,18 @@
       limits: positionLimits(profile),
       available,
       picked_ids: pickedIds,
+      live_pick_count: Math.max(0, currentPick - 1),
       complete: currentPick > teams * rounds,
     };
-    Object.assign(state, roomIntelligence(profile, draft, picks, state, playerById));
+    Object.assign(state, roomIntelligence(profile, draft, picks, state, playerById, tradedPicks));
     return state;
   }
 
-  function recoverDraftState(profile, draft, livePicks, manualPicks, rosters, user) {
+  function recoverDraftState(profile, draft, livePicks, manualPicks, rosters, user, tradedPicks = null) {
     const effectivePicks = DraftOrder.mergeDraftPicks(livePicks, manualPicks);
     return {
       effective_picks: effectivePicks,
-      state: makeDraftState(profile, draft, effectivePicks, rosters, user),
+      state: makeDraftState(profile, draft, effectivePicks, rosters, user, tradedPicks),
     };
   }
 
@@ -503,6 +529,7 @@
   return {
     POSITIONS,
     DraftEngineInputError,
+    availablePlayers,
     chooseRecommendations,
     detectPositionRun,
     draftSlotForUser,
@@ -518,4 +545,3 @@
     validateInputs,
   };
 });
-

@@ -89,3 +89,19 @@ test("invalid dimensions and reversal settings fail safely", () => {
     ["reversal_round must be 0 or a round from 3 through the final round"],
   );
 });
+
+test("traded picks change roster turns without changing snake coordinates", () => {
+  const configured = {
+    settings: { teams: 4, rounds: 3, reversal_round: 0 },
+    slot_to_roster_id: { 1: 101, 2: 102, 3: 103, 4: 104 },
+  };
+  configured.traded_picks = [
+    { round: 2, roster_id: 101, owner_id: 102 },
+    { round: 2, roster_id: 102, owner_id: 101 },
+  ];
+
+  assert.equal(DraftOrder.pickOwnerRosterId(2, 2, configured), 101);
+  assert.equal(DraftOrder.pickOwnerRosterId(2, 1, configured), 102);
+  assert.equal(DraftOrder.pickRosterId({ pick_no: 7, draft_slot: 2 }, configured), 101);
+  assert.deepEqual(DraftOrder.rosterPickNumbers(101, configured), [1, 7, 9]);
+});

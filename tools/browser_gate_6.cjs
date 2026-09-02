@@ -126,6 +126,7 @@ async function run() {
           metadata: { name: "Gate room", scoring_type: "half_ppr" },
         };
       } else if (pathname === "/v1/draft/gate-draft/picks") body = [];
+      else if (pathname === "/v1/draft/gate-draft/traded_picks") body = [];
       else if (pathname === "/v1/league/gate-league") {
         body = {
           league_id: "gate-league",

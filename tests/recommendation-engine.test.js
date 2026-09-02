@@ -172,6 +172,60 @@ test("room state exposes run, demand, tier cliff, and ADP faller signals", () =>
   assert.ok(state.ahead_slots.length > 0);
 });
 
+test("future keeper slots do not masquerade as recent room activity", () => {
+  const players = [player(1, "next-player", "WR")];
+  const picks = [
+    pick(1, 4, "RB", "taken-1"),
+    pick(2, 4, "RB", "taken-2"),
+    pick(12, 4, "WR", "future-keeper"),
+  ];
+  const state = Engine.makeDraftState(profile("one_qb", players), draft(), picks, [], { user_id: "coach" });
+
+  assert.equal(state.current_pick, 3);
+  assert.equal(state.live_pick_count, 2);
+  assert.deepEqual(state.recent_picks.map((row) => row.pick_no), [2, 1]);
+  assert.deepEqual(state.run_signal, { position: "RB", count: 2, kind: "streak" });
+});
+
+test("drafted-player filtering uses IDs and punctuation-tolerant names", () => {
+  const players = [
+    player(1, "ranked-id", "WR", { name: "A.J. Brown" }),
+    player(2, "gone-by-id", "RB", { name: "Different Name" }),
+    player(3, "available", "TE", { name: "Still Available" }),
+  ];
+  const picks = [
+    { pick_no: 1, player_id: "sleeper-id-changed", metadata: { first_name: "AJ", last_name: "Brown", position: "WR" } },
+    { pick_no: 2, player_id: "gone-by-id", metadata: { first_name: "Other", last_name: "Player", position: "RB" } },
+  ];
+
+  assert.deepEqual(
+    Engine.availablePlayers(players, picks).map((row) => row.sleeper_id),
+    ["available"],
+  );
+});
+
+test("acquired and traded-away picks determine the next roster turn", () => {
+  const configured = draft({ teams: 4, rounds: 3, slot: 1 });
+  const trades = [
+    { round: 2, roster_id: 101, owner_id: 102 },
+    { round: 2, roster_id: 102, owner_id: 101 },
+  ];
+  const players = [player(1, "next-player", "WR")];
+  const picks = Array.from({ length: 5 }, (_value, index) => pick(index + 1, 4, "RB", `taken-${index + 1}`));
+  const state = Engine.makeDraftState(
+    profile("one_qb", players),
+    configured,
+    picks,
+    [],
+    { user_id: "coach" },
+    trades,
+  );
+
+  assert.equal(state.current_pick, 6);
+  assert.equal(state.decision_pick, 7);
+  assert.equal(state.picks_away, 1);
+});
+
 test("saved manual state recovers without live API picks and live data later wins", () => {
   const players = [
     player(1, "manual-one", "RB"),

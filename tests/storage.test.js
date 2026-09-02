@@ -84,7 +84,7 @@ test("current storage normalizes unknown and corrupt fields deterministically", 
   assert.equal(result.state.ranking_profiles[0].players[0].rank, 1);
   assert.equal(result.state.settings.active_ranking_profile_id, null);
   assert.equal(result.state.settings.dock, "right");
-  assert.equal(result.state.settings.poll_interval_ms, 1500);
+  assert.equal(result.state.settings.poll_interval_ms, 300);
   assert.ok(result.warnings.length >= 3);
   assert.deepEqual(Storage.validateState(result.state), []);
 });
@@ -194,6 +194,7 @@ test("draft sessions retain bounded config and cached live recovery state", () =
           pick_timer: 120,
           user_slot: 7,
           user_roster_id: 107,
+          traded_picks: [{ round: 4, roster_id: 104, owner_id: 107 }],
           roster_positions: ["QB", "SUPER_FLEX", "BN"],
           scoring: { rec: 1, __proto__: 9 },
           ignored: true,
@@ -213,6 +214,7 @@ test("draft sessions retain bounded config and cached live recovery state", () =
   assert.equal(session.draft_config.name, "Live fixture");
   assert.equal(session.draft_config.reversal_round, 3);
   assert.equal(session.draft_config.user_slot, 7);
+  assert.deepEqual(session.draft_config.traded_picks, [{ round: 4, roster_id: 104, owner_id: 107 }]);
   assert.deepEqual(session.draft_config.scoring, { rec: 1 });
   assert.deepEqual(session.cached_live_picks.map((pick) => [pick.pick_no, pick.player_id]), [[1, "first"], [2, "replacement"]]);
   assert.equal(session.cached_live_picks[1].draft_slot, null);

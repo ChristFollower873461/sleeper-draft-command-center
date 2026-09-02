@@ -46,6 +46,7 @@
       reception_points: Number(config.scoring?.rec ?? 0),
       user_slot: config.user_slot,
       user_roster_id: config.user_roster_id,
+      traded_picks: [...(config.traded_picks || [])],
       warnings: [],
       engine_draft: Sessions.draftFromSession(session),
     };
@@ -74,6 +75,7 @@
       session.manual_picks,
       options.rosters || [],
       user,
+      options.tradedPicks || context.traded_picks || [],
     );
     const recommendations = Engine.chooseRecommendations(recovered.state, options.recommendationLimit || 4);
     const pinnedIds = new Set(session.pinned_player_ids);
@@ -105,10 +107,18 @@
     return filterAvailable(runtime, { query, position })[0] || null;
   }
 
+  function livePollDelay(configuredValue, status, hidden = false) {
+    const parsed = Number(configuredValue);
+    const configured = Number.isFinite(parsed) ? Math.max(250, Math.min(60000, parsed)) : 300;
+    if (hidden) return Math.max(configured, 2500);
+    return status === "drafting" ? configured : Math.max(configured, 1000);
+  }
+
   return {
     contextFromSession,
     filterAvailable,
     firstManualCandidate,
+    livePollDelay,
     makeRuntimeState,
     normalizeSearch,
     pickSignature,
