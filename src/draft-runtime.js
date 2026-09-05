@@ -53,8 +53,21 @@
   }
 
   function pickSignature(picks) {
+    // A posted pick can be corrected without changing its player or number.
+    // Track engine inputs while ignoring unrelated API timestamps and key order.
     return (Array.isArray(picks) ? picks : [])
-      .map((pick) => `${Number(pick?.pick_no) || 0}:${String(pick?.player_id ?? pick?.metadata?.player_id ?? "")}`)
+      .map((pick) => JSON.stringify([
+        Number(pick?.pick_no ?? pick?.pickNo) || 0,
+        String(pick?.player_id ?? pick?.playerId ?? pick?.metadata?.player_id ?? ""),
+        pick?.draft_slot ?? pick?.draftSlot,
+        pick?.roster_id ?? pick?.rosterId,
+        pick?.round,
+        pick?.picked_by ?? pick?.pickedBy,
+        pick?.metadata?.first_name ?? pick?.metadata?.firstName,
+        pick?.metadata?.last_name ?? pick?.metadata?.lastName,
+        pick?.metadata?.position,
+        pick?.metadata?.team,
+      ]))
       .sort()
       .join("|");
   }

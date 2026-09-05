@@ -39,11 +39,11 @@ For the current GitHub beta, follow
 ## Live Sync
 
 During an active draft, the visible command center checks Sleeper's posted-pick
-endpoint every 300 ms and refreshes recommendations only when the pick identity
-changes. A request is abandoned after 2.2 seconds so one slow response cannot
-freeze the board. Hidden tabs back off to 2.5 seconds, room metadata refreshes
-separately, and returning online or refocusing the command center triggers an
-immediate check.
+endpoint every 300 ms and refreshes recommendations when a posted pick's identity,
+ownership, or player metadata changes. A request is abandoned after 2.2 seconds so
+one slow response cannot freeze the board. Hidden tabs back off to 2.5 seconds,
+room metadata refreshes separately, and returning online or refocusing the command
+center triggers an immediate check.
 
 This works directly against Sleeper's public read-only API. It does not need
 Supabase or another project-operated backend.
