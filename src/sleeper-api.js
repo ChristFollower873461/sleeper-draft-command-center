@@ -201,7 +201,9 @@
     const [league, rosters, tradedPicks] = await Promise.all([
       leagueId ? fetchLeague(leagueId, options) : Promise.resolve(null),
       leagueId ? fetchLeagueRosters(leagueId, options) : Promise.resolve([]),
-      fetchDraftTradedPicks(draftId, options).catch(() => []),
+      // A failed ownership read is not evidence that there are no traded picks.
+      // Reject the bundle so the draft view retains its last complete context.
+      fetchDraftTradedPicks(draftId, options),
     ]);
     return { draft, league, rosters, traded_picks: tradedPicks };
   }

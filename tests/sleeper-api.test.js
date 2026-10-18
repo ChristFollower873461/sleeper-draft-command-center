@@ -142,6 +142,39 @@ test("draft bundle skips league calls for standalone mocks", async () => {
   ]);
 });
 
+test("failed traded-pick reads cannot masquerade as an empty ownership list", async (t) => {
+  const failures = [
+    { name: "server outage", result: response({}, { ok: false, status: 503 }), code: "HTTP_ERROR" },
+    { name: "rate limit", result: response({}, { ok: false, status: 429 }), code: "HTTP_ERROR" },
+    { name: "malformed collection", result: response({}), code: "MALFORMED_RESPONSE" },
+    { name: "network failure", error: new TypeError("fixture connection failure"), code: "NETWORK_ERROR" },
+  ];
+  for (const failure of failures) {
+    await t.test(failure.name, async () => {
+      const fetchImpl = async (url) => {
+        const pathname = new URL(url).pathname;
+        if (pathname.endsWith("/traded_picks")) {
+          if (failure.error) throw failure.error;
+          return failure.result;
+        }
+        return response(pathname.endsWith("/picks") ? [] : {
+          draft_id: "fixture-draft", settings: { teams: 4, rounds: 4 },
+        });
+      };
+      for (const read of [Api.fetchDraftMetadataBundle, Api.fetchDraftBundle]) {
+        await assert.rejects(read("fixture-draft", { fetchImpl }), (error) => error.code === failure.code);
+      }
+    });
+  }
+});
+
+test("a confirmed empty traded-pick list remains usable room metadata", async () => {
+  const fetchImpl = async (url) => response(new URL(url).pathname.endsWith("/traded_picks")
+    ? [] : { draft_id: "fixture-draft", settings: { teams: 4, rounds: 4 } });
+  const bundle = await Api.fetchDraftMetadataBundle("fixture-draft", { fetchImpl });
+  assert.deepEqual(bundle.traded_picks, []);
+});
+
 test("player catalog normalizes skill players and team defenses", () => {
   const catalog = Api.normalizeCatalog({
     "101": {

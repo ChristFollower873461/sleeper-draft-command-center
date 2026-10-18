@@ -45,6 +45,10 @@ one slow response cannot freeze the board. Hidden tabs back off to 2.5 seconds,
 room metadata refreshes separately, and returning online or refocusing the command
 center triggers an immediate check.
 
+If room metadata cannot be read, including traded-pick ownership, an open room
+keeps its last complete context while posted-pick polling continues. Reopening a
+room falls back to its saved session; a new room needs a complete initial read.
+
 This works directly against Sleeper's public read-only API. It does not need
 Supabase or another project-operated backend.
 
