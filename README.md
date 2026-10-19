@@ -83,6 +83,14 @@ reload, isolated profiles, every lifecycle command, and exact export/reimport:
 SDCC_HEADED=1 node tools/browser_gate_4.cjs
 ```
 
+The focused profile-transition regression uses a disposable Chromium extension
+profile and fictional rankings to check delayed local saves, blocked overlapping
+edits, failed-save recovery, and import transitions:
+
+```bash
+node tools/browser_profile_transition.cjs
+```
+
 The draft-runtime workflow completes one-QB and superflex drafts in live and
 manual modes, including reload, undo, outage recovery, and mobile layouts:
 

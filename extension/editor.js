@@ -19,6 +19,7 @@
     dirty: false,
     saveTimer: null,
     saveChain: Promise.resolve(),
+    profileTransition: false,
   };
 
   const elements = {
@@ -181,6 +182,33 @@
     return row;
   }
 
+  function renderTransitionControls() {
+    const busy = app.profileTransition;
+    const shell = document.querySelector(".editor-shell");
+    shell.inert = busy;
+    shell.setAttribute("aria-busy", String(busy));
+    for (const dialog of document.querySelectorAll("dialog")) dialog.inert = busy;
+    for (const control of document.querySelectorAll(
+      ".ranking-toolbar input, .ranking-toolbar button, #ranking-rows input, #ranking-rows button, dialog input, dialog select, dialog textarea, dialog button, [data-empty-action], #import-file",
+    )) control.disabled = busy;
+    elements.newProfile.disabled = busy;
+    elements.importProfile.disabled = busy;
+  }
+
+  async function runProfileTransition(operation) {
+    if (app.profileTransition) return;
+    app.profileTransition = true;
+    cancelPointerDrag();
+    renderProfileControls();
+    setSaveState("Working locally...", "saving");
+    try {
+      await operation();
+    } finally {
+      app.profileTransition = false;
+      renderProfileControls();
+    }
+  }
+
   function renderProfileControls() {
     const profile = activeProfile();
     const activeId = profile?.id || "";
@@ -189,7 +217,7 @@
       elements.profileSelect.append(new Option("No ranking profiles", ""));
       elements.profileSelect.disabled = true;
     } else {
-      elements.profileSelect.disabled = false;
+      elements.profileSelect.disabled = app.profileTransition;
       for (const candidate of app.state.ranking_profiles) {
         elements.profileSelect.append(new Option(`${candidate.name} | ${candidate.players.length}`, candidate.id));
       }
@@ -199,12 +227,13 @@
     elements.profileCount.textContent = String(app.editor?.players.length || 0);
     elements.profileFormat.textContent = profile ? formatLabel(profile.format) : "No format";
     elements.profileUpdated.textContent = profile ? formatTimestamp(profile.updated_at) : "Not saved";
-    elements.undo.disabled = !app.editor?.undo_stack.length;
-    elements.redo.disabled = !app.editor?.redo_stack.length;
+    elements.undo.disabled = app.profileTransition || !app.editor?.undo_stack.length;
+    elements.redo.disabled = app.profileTransition || !app.editor?.redo_stack.length;
     for (const control of [elements.cloneProfile, elements.renameProfile, elements.deleteProfile]) {
-      control.disabled = !profile;
+      control.disabled = app.profileTransition || !profile;
     }
-    elements.exportProfile.disabled = !profile || !app.editor?.players.length;
+    elements.exportProfile.disabled = app.profileTransition || !profile || !app.editor?.players.length;
+    renderTransitionControls();
   }
 
   function renderBoard(focus = null) {
@@ -219,6 +248,7 @@
     const fragment = document.createDocumentFragment();
     for (const player of players) fragment.append(makeRankingRow(player));
     elements.rows.replaceChildren(fragment);
+    renderTransitionControls();
     elements.visibleCount.textContent = `${players.length} shown`;
     elements.empty.hidden = players.length > 0;
 
@@ -249,7 +279,7 @@
       await writeState(nextState);
       if (app.editor?.profile_id === snapshot.profile_id && app.editor.revision === revision) {
         app.dirty = false;
-        setSaveState("Saved in this browser", "saved");
+        setSaveState(app.profileTransition ? "Working locally..." : "Saved in this browser", app.profileTransition ? "saving" : "saved");
         renderProfileControls();
       } else {
         scheduleSave();
@@ -270,7 +300,7 @@
   }
 
   function applyEditor(nextEditor, focus = null) {
-    if (!nextEditor || nextEditor === app.editor) return;
+    if (app.profileTransition || !nextEditor || nextEditor === app.editor) return;
     app.editor = nextEditor;
     renderBoard(focus);
     scheduleSave(nextEditor.last_action === "undo" || nextEditor.last_action === "redo"
@@ -279,14 +309,16 @@
   }
 
   async function changeProfile(profileId) {
-    if (!profileId || profileId === app.editor?.profile_id) return;
+    if (app.profileTransition || !profileId || profileId === app.editor?.profile_id) return;
     try {
-      await flushSave();
-      const nextState = Profiles.setActiveProfile(app.state, profileId);
-      await writeState(nextState);
-      loadEditor(activeProfile());
-      renderBoard();
-      setSaveState("Profile loaded", "saved");
+      await runProfileTransition(async () => {
+        await flushSave();
+        const nextState = Profiles.setActiveProfile(app.state, profileId);
+        await writeState(nextState);
+        loadEditor(activeProfile());
+        renderBoard();
+        setSaveState("Profile loaded", "saved");
+      });
     } catch (error) {
       setSaveState(error.message, "error");
       renderProfileControls();
@@ -304,6 +336,7 @@
   }
 
   function openProfileDialog(mode) {
+    if (app.profileTransition) return;
     const profile = activeProfile();
     app.profileDialogMode = mode;
     const rename = mode === "rename";
@@ -320,26 +353,29 @@
 
   async function submitProfileDialog(event) {
     event.preventDefault();
+    if (app.profileTransition) return;
     if (event.submitter?.value !== "save") {
       elements.profileDialog.close();
       return;
     }
     try {
-      await flushSave();
-      if (app.profileDialogMode === "rename") {
-        await writeState(Profiles.renameProfile(app.state, activeProfile().id, elements.profileNameField.value));
-      } else {
-        await writeState(Profiles.addProfile(app.state, {
-          name: elements.profileNameField.value,
-          format: elements.profileFormatField.value,
-          source: "manual",
-          players: [],
-        }));
-      }
-      loadEditor(activeProfile());
-      renderBoard();
-      elements.profileDialog.close();
-      setSaveState(app.profileDialogMode === "rename" ? "Profile renamed" : "Profile created", "saved");
+      await runProfileTransition(async () => {
+        await flushSave();
+        if (app.profileDialogMode === "rename") {
+          await writeState(Profiles.renameProfile(app.state, activeProfile().id, elements.profileNameField.value));
+        } else {
+          await writeState(Profiles.addProfile(app.state, {
+            name: elements.profileNameField.value,
+            format: elements.profileFormatField.value,
+            source: "manual",
+            players: [],
+          }));
+        }
+        loadEditor(activeProfile());
+        renderBoard();
+        elements.profileDialog.close();
+        setSaveState(app.profileDialogMode === "rename" ? "Profile renamed" : "Profile created", "saved");
+      });
     } catch (error) {
       setSaveState(error.message, "error");
     }
@@ -347,17 +383,20 @@
 
   async function cloneActiveProfile() {
     try {
-      await flushSave();
-      await writeState(Profiles.cloneProfile(app.state, activeProfile().id));
-      loadEditor(activeProfile());
-      renderBoard();
-      setSaveState("Profile cloned", "saved");
+      await runProfileTransition(async () => {
+        await flushSave();
+        await writeState(Profiles.cloneProfile(app.state, activeProfile().id));
+        loadEditor(activeProfile());
+        renderBoard();
+        setSaveState("Profile cloned", "saved");
+      });
     } catch (error) {
       setSaveState(error.message, "error");
     }
   }
 
   function openDeleteDialog() {
+    if (app.profileTransition) return;
     const profile = activeProfile();
     if (!profile) return;
     elements.deleteProfileName.textContent = profile.name;
@@ -366,33 +405,39 @@
 
   async function submitDeleteDialog(event) {
     event.preventDefault();
+    if (app.profileTransition) return;
     if (event.submitter?.value !== "delete") {
       elements.deleteDialog.close();
       return;
     }
     try {
-      await flushSave();
-      await writeState(Profiles.deleteProfile(app.state, activeProfile().id));
-      loadEditor(activeProfile());
-      renderBoard();
-      elements.deleteDialog.close();
-      setSaveState("Profile deleted", "saved");
+      await runProfileTransition(async () => {
+        await flushSave();
+        await writeState(Profiles.deleteProfile(app.state, activeProfile().id));
+        loadEditor(activeProfile());
+        renderBoard();
+        elements.deleteDialog.close();
+        setSaveState("Profile deleted", "saved");
+      });
     } catch (error) {
       setSaveState(error.message, "error");
     }
   }
 
   async function importProfileFile() {
+    if (app.profileTransition) return;
     const file = elements.importFile.files?.[0];
     if (!file) return;
     try {
-      if (file.size > MAX_IMPORT_BYTES) throw new Error("Ranking pack exceeds the 2 MiB limit");
-      const pack = JSON.parse(await file.text());
-      await flushSave();
-      await writeState(Profiles.importRankingPack(app.state, pack));
-      loadEditor(activeProfile());
-      renderBoard();
-      setSaveState(`Imported ${app.editor.players.length} players`, "saved");
+      await runProfileTransition(async () => {
+        if (file.size > MAX_IMPORT_BYTES) throw new Error("Ranking pack exceeds the 2 MiB limit");
+        const pack = JSON.parse(await file.text());
+        await flushSave();
+        await writeState(Profiles.importRankingPack(app.state, pack));
+        loadEditor(activeProfile());
+        renderBoard();
+        setSaveState(`Imported ${app.editor.players.length} players`, "saved");
+      });
     } catch (error) {
       setSaveState(error instanceof SyntaxError ? "Ranking pack is not valid JSON" : error.message, "error");
     } finally {
@@ -402,25 +447,28 @@
 
   async function exportActiveProfile() {
     try {
-      await flushSave();
-      const profile = activeProfile();
-      const pack = Profiles.exportRankingPack(app.state, profile.id);
-      const blob = new Blob([`${JSON.stringify(pack, null, 2)}\n`], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${slug(profile.name)}.ranking-pack.json`;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setSaveState("Public ranking pack exported", "saved");
+      await runProfileTransition(async () => {
+        await flushSave();
+        const profile = activeProfile();
+        const pack = Profiles.exportRankingPack(app.state, profile.id);
+        const blob = new Blob([`${JSON.stringify(pack, null, 2)}\n`], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${slug(profile.name)}.ranking-pack.json`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setSaveState("Public ranking pack exported", "saved");
+      });
     } catch (error) {
       setSaveState(error.message, "error");
     }
   }
 
   function openPlayerDialog(playerId) {
+    if (app.profileTransition) return;
     const player = app.editor?.players.find((candidate) => candidate.sleeper_id === playerId);
     if (!player) return;
     app.detailPlayerId = playerId;
@@ -436,6 +484,7 @@
 
   function submitPlayerDialog(event) {
     event.preventDefault();
+    if (app.profileTransition) return;
     if (event.submitter?.value !== "save") {
       elements.playerDialog.close();
       return;
@@ -482,6 +531,14 @@
     applyEditor(next, { playerId: id, selector: ".drag-handle" });
   }
 
+  function cancelPointerDrag() {
+    const drag = app.pointerDrag;
+    if (drag?.handle.hasPointerCapture(drag.pointerId)) drag.handle.releasePointerCapture(drag.pointerId);
+    app.pointerDrag = null;
+    app.draggedId = null;
+    clearDropTargets();
+  }
+
   function clearDropTargets() {
     for (const row of elements.rows.querySelectorAll(".ranking-row")) row.classList.remove("drop-target", "dragging");
   }
@@ -516,10 +573,11 @@
     });
     elements.rows.addEventListener("pointerdown", (event) => {
       const handle = event.target.closest(".drag-handle");
-      if (!handle || event.button !== 0) return;
+      if (app.profileTransition || !handle || event.button !== 0) return;
       const row = handle.closest(".ranking-row");
       app.pointerDrag = {
         pointerId: event.pointerId,
+        handle,
         playerId: row.dataset.playerId,
         startX: event.clientX,
         startY: event.clientY,
@@ -551,11 +609,7 @@
         applyEditor(Editor.moveBefore(app.editor, draggedId, row.dataset.playerId), { playerId: draggedId });
       }
     });
-    elements.rows.addEventListener("pointercancel", () => {
-      app.pointerDrag = null;
-      app.draggedId = null;
-      clearDropTargets();
-    });
+    elements.rows.addEventListener("pointercancel", cancelPointerDrag);
     window.addEventListener("beforeunload", () => {
       if (app.dirty) persistEditor();
     });
